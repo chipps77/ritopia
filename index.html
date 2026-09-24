@@ -775,6 +775,7 @@ function applyLandData(txt){
   LAND=parts[0];
   try{KOREA=parts[1]?JSON.parse(parts[1]):null;}catch(e){KOREA=null;}
 }
+applyLandData($('land-data').textContent);
 let needSave=false;
 function blankWork(o){return Object.assign({id:uid(),title:'',type:'電影',year:'',rating:'',ratingSource:'',synopsis:'',fields:[],tags:[],poster:'',featured:false,videos:[],banner:'',stills:[]},o||{});}
 function migrate(){
