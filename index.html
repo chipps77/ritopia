@@ -1207,16 +1207,20 @@ function brandStartYear(b){
   const ds=(b.campaigns||[]).map(c=>c.date).filter(Boolean).sort();
   return ds.length?ds[0]:'';
 }
+function allCampaignsOf(b){
+  if(b.subBrands&&b.subBrands.length)return [].concat(...b.subBrands.map(sb=>sb.campaigns||[]));
+  return b.campaigns||[];
+}
 function brandCard(b){
-  const ed=editing(),title=L(b,'title'),cs=(b.campaigns||[]),cover=cs.find(c=>c.thumb)||cs[0]||{};
+  const ed=editing(),title=L(b,'title'),cs=allCampaignsOf(b),cover=cs.find(c=>c.thumb)||cs[0]||{};
   const yr=String(b.yearLabel||'').trim()||brandDateOf(b);
   return `<article class="camcard"><button class="camth${cover.thumb?' has':''}" data-act="openbrand" data-id="${esc(b.id)}" style="${thumbStyle(cover,title+b.id)}" aria-label="${esc(title)}">${b.current?`<span class="camnow">${esc(T('現在'))}</span>`:''}<div class="camov"><span class="camy">${esc(yr)}${cs.length>1?` · ${cs.length}`:''}</span><h4>${esc(title)}</h4></div></button>`+
     (ed?`<div class="tools"><button class="mini" data-act="editbrand" data-id="${esc(b.id)}">${esc(T('編輯品牌'))}</button></div>`:'')+`</article>`;
 }
-function campaignCard(c,b){
+function campaignCard(c,brandId,subId){
   const ed=editing(),href=isSafe(c.url)?esc(c.url):'#',title=L(c,'title'),isVideo=isSafe(c.url)&&/youtu|vimeo|\.(mp4|mov)$/i.test(c.url);
   return `<article class="camcard"><a class="camth${c.thumb?' has':''}" ${href!=='#'?`href="${href}" target="_blank" rel="noopener noreferrer"`:''} style="${thumbStyle(c,c.title+c.id)}">${isVideo?PLAY:''}<div class="camov"><span class="camy">${esc(c.date||'')}</span><h4>${esc(title)}</h4></div></a>`+
-    (ed?`<div class="tools"><button class="mini" data-act="editcampaign" data-id="${esc(c.id)}" data-b="${esc(b.id)}">${esc(T('編輯這張卡片'))}</button></div>`:'')+`</article>`;
+    (ed?`<div class="tools"><button class="mini" data-act="editcampaign" data-id="${esc(c.id)}" data-b="${esc(brandId)}" data-s="${esc(subId||'')}">${esc(T('編輯這張卡片'))}</button></div>`:'')+`</article>`;
 }
 function vrowHtml(v,i,w,showWork,n){
   const href=isSafe(v.url)?esc(v.url):'#',title=L(v,'title'),ed=editing();
@@ -1452,7 +1456,7 @@ function viewLinks(cat){
     return `<div class="crumb">${backAct}</div>`+
       `<h2 class="brandh">${esc(L(activeUnit,'title'))}${activeUnit.current?`<span class="camnow inline">${esc(T('現在'))}</span>`:''}</h2>`+
       `<p class="muted brandyr">${esc(String(activeUnit.yearLabel||'').trim()||brandDateOf(activeUnit))}</p>`+
-      (cs.length?`<div class="grid campaign">${cs.map(c=>campaignCard(c,activeUnit)).join('')}</div>`:`<p class="muted pad">${esc(T('這個品牌還沒有照片或影片。'))}</p>`)+
+      (cs.length?`<div class="grid campaign">${cs.map(c=>campaignCard(c,brand.id,sub?sub.id:'')).join('')}</div>`:`<p class="muted pad">${esc(T('這個品牌還沒有照片或影片。'))}</p>`)+
       (ed?`<div>${addBtn}${editBrandBtn}</div>`:'');
   }
   let list=data.items.filter(it=>it.cat===cat&&(!ui.tag||(ui.tag==='現在'?!!it.current:matchTag(it,ui.tag)))&&(!ui.sub||it.tags.includes(ui.sub))&&(!(cat==='節目'&&ui.who)||it.who===ui.who));
@@ -2162,7 +2166,21 @@ const DEL={
   video(){const w=findIn(data.works,m.workId);if(w)w.videos=w.videos.filter(x=>x.id!==m.id);},
   award(){data.awards=data.awards.filter(x=>x.id!==m.id);if(ui.work===m.id){ui.work='';try{location.hash=hashOf('獎項','');}catch(e){}}},
   awardvideo(){const a=findIn(data.awards,m.workId);if(a)a.videos=a.videos.filter(x=>x.id!==m.id);},
-  place(){data.places=data.places.filter(x=>x.id!==m.id);mv=null;selPlace='';}
+  place(){data.places=data.places.filter(x=>x.id!==m.id);mv=null;selPlace='';},
+  brand(){
+    data.items=data.items.filter(x=>x.id!==m.id);
+    if(ui.work===m.id){ui.work='';ui.subBrand='';}
+  },
+  subbrand(){
+    const parent=findIn(data.items,m.workId);
+    if(parent)parent.subBrands=(parent.subBrands||[]).filter(x=>x.id!==m.id);
+    if(ui.subBrand===m.id)ui.subBrand='';
+  },
+  campaign(){
+    const brRoot=findIn(data.items,m.workId);
+    const br=m.subId?(brRoot.subBrands||[]).find(x=>x.id===m.subId):brRoot;
+    if(br)br.campaigns=(br.campaigns||[]).filter(x=>x.id!==m.id);
+  }
 };
 function msave(){
   if(m.tagInput)mAddTags(m.tagInput);
