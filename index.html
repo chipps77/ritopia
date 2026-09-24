@@ -2583,7 +2583,7 @@ else{try{history.replaceState(null,'',hashOf(ui.cat,ui.work));}catch(e){}}
 renderAll();
 if(wasEditEntry)promptForToken();
 else if(ghToken()){canEdit=true;renderAll();}
-fetch('data.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(fresh=>{
+fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(fresh=>{
   if(fresh){data=fresh;renderAll();}
 }).catch(()=>{});
 })();
