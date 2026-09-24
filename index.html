@@ -2574,12 +2574,15 @@ document.addEventListener('pointerup',ev=>{
 });
 
 /* ---------- start ---------- */
+const wasEditEntry=(location.hash===GH_ENTRY_HASH);
+if(wasEditEntry){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
 build();
 const hr=parseHash();
 if(hr){ui.cat=hr.cat;ui.work=validDetail(hr.cat,hr.work)?hr.work:'';}
 else{try{history.replaceState(null,'',hashOf(ui.cat,ui.work));}catch(e){}}
 renderAll();
-checkEditEntry();
+if(wasEditEntry)promptForToken();
+else if(ghToken()){canEdit=true;renderAll();}
 fetch('data.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(fresh=>{
   if(fresh){data=fresh;renderAll();}
 }).catch(()=>{});
