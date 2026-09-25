@@ -1019,14 +1019,15 @@ function mainKids(cat,mn){
   if(mn.works)data.items.forEach(it=>{if(it.cat===cat)it.tags.forEach(t=>{if(isWorkName(t)&&t!==mn.name&&!kids.includes(t))kids.push(t);});});
   return kids;
 }
-function matchTag(it,tag){
-  const mn=treeOf(it.cat).find(x=>x.name===tag);
-  if(mn)return it.tags.includes(tag)||mainKids(it.cat,mn).some(k=>it.tags.includes(k));
+function matchTag(it,tag,cat){
+  cat=cat||it.cat;
+  const mn=treeOf(cat).find(x=>x.name===tag);
+  if(mn)return it.tags.includes(tag)||mainKids(cat,mn).some(k=>it.tags.includes(k));
   return it.tags.includes(tag);
 }
 function tagModel(cat){
   if(tmCache[cat])return tmCache[cat];
-  const items=data.items.filter(it=>it.cat===cat),used={};
+  const items=cat==='作品'?data.works:data.items.filter(it=>it.cat===cat),used={};
   items.forEach(it=>it.tags.forEach(t=>{used[t]=(used[t]||0)+1;}));
   const mains=[],kidOf={},names=new Set();
   treeOf(cat).forEach(mn=>{
@@ -1046,7 +1047,7 @@ function renderChips(){
   const show=!ui.q.trim()&&ui.cat!=='主頁'&&!currentWork()&&!currentSong()&&!currentAward()&&!currentInterview();
   if(!show){el.style.display='none';ui.tag='';ui.sub='';el.innerHTML='';return;}
   let rows='';
-  if(LINKCATS.includes(ui.cat)){
+  if(LINKCATS.includes(ui.cat)||ui.cat==='作品'){
     const tm=tagModel(ui.cat);
     const tops=tm.mains.map(x=>x.name).concat(tm.others);
     if(ui.tag&&!tops.includes(ui.tag))ui.tag='';
@@ -1086,8 +1087,10 @@ function renderEditbar(){
   const el=$('editbar');
   if(!editing()){el.innerHTML='';return;}
   const a=addAction();
-  const isLink=LINKCATS.includes(ui.cat)&&!currentInterview();
-  const hint=isLink?T('卡片下方的欄位可以直接輸入標籤，按 Enter 新增。'):'';
+  const isWorkList=ui.cat==='作品'&&!currentWork()&&!currentSong();
+  const isLink=(LINKCATS.includes(ui.cat)&&!currentInterview())||isWorkList;
+  const tagBtnsOnly=isWorkList;
+  const hint=(isLink&&!tagBtnsOnly)?T('卡片下方的欄位可以直接輸入標籤，按 Enter 新增。'):'';
   const sn=langInfo().name;
   const tg=isLink?`<button class="btn sec" data-act="edittree">${esc(T('編輯標籤分類'))}</button>`:'';
   el.innerHTML=`<div class="editbar"><label>${esc(T('站名'))} (${esc(sn)})<input id="sitetitle" value="${esc(siteName())}" maxlength="40"></label>${a?`<button class="btn" data-act="${a[0]}">${esc(T(a[1]))}</button>`:''}${ui.cat==='節目'&&!currentLive()?`<button class="btn sec" data-act="newlive">${esc(T('新增直播'))}</button>`:''}${tg}${isLink?`<button class="btn sec" data-act="edittagtr">${esc(T('編輯標籤英文'))}</button>`:''}${ui.cat==='拍攝地圖'&&data.placesHidden.length?`<button class="btn sec" data-act="restoreplaces">${esc(T('復原已撤下的地點（{n}）',{n:data.placesHidden.length}))}</button>`:''}${ui.cat==='作品'&&!currentWork()&&!currentSong()?MEDIA_TY.map(ty=>`<button class="btn sec" data-act="${mediaAct(ty)}">${esc(T(mediaLabel(ty)))}</button>`).join(''):''}${hint?`<span class="hint">${esc(hint)}</span>`:''}</div>`;
@@ -1389,7 +1392,7 @@ function lyricsSectionHtml(blocks,ed){
 function viewWorks(){
   if(!data.works.length&&!data.songs.length)return `<div class="empty"><span>${esc(T('還沒有作品。'))}</span>${editing()?`<button class="btn" data-act="newwork">${esc(T('新增作品'))}</button>`:''}</div>`;
   const mediaTag=MEDIA_TY.includes(ui.tag);
-  const list=mediaTag?[]:data.works.filter(w=>!ui.tag||w.tags.includes(ui.tag));
+  const list=mediaTag?[]:data.works.filter(w=>(!ui.tag||matchTag(w,ui.tag,'作品'))&&(!ui.sub||w.tags.includes(ui.sub)));
   let h='';
   if(mediaTag){
     const sg=data.songs.filter(x=>songType(x)===ui.tag).sort((a,b)=>String(b.year||'').localeCompare(String(a.year||'')));
@@ -1870,7 +1873,7 @@ function wallEditHtml(){
   return `<div class="field"><span>${esc(T('輪播照片'))}</span><small>${esc(T('會自動裁成直式並縮小。主頁會像精選作品一樣輪播顯示（至少 2 張）。'))}</small><div class="wgrid">${items}</div>${m.wall.length<MAX_WALL?`<label class="btn sec fileb">${esc(T('新增照片'))}<input type="file" id="wall-input" accept="image/*" multiple></label>`:''}</div>`;
 }
 function tagtreeHtml(){
-  const used={};data.items.filter(it=>it.cat===m.ttcat).forEach(it=>it.tags.forEach(t=>{used[t]=1;}));
+  const used={};(m.ttcat==='作品'?data.works:data.items.filter(it=>it.cat===m.ttcat)).forEach(it=>it.tags.forEach(t=>{used[t]=1;}));
   const inTree={};m.tree.forEach(x=>{if(x.name)inTree[x.name]=1;splitTags(x.kidsText).forEach(k=>{inTree[k]=1;});});
   const free=Object.keys(used).filter(t=>!inTree[t]);
   const rows=m.tree.map((x,i)=>`<div class="ttrow"><div class="two"><label>${esc(T('主標籤'))}<input data-tt="name" data-i="${i}" value="${esc(x.name)}" maxlength="24" autocomplete="off"></label><label>${esc(T('子標籤（用逗號分隔）'))}<input data-tt="kids" data-i="${i}" value="${esc(x.kidsText)}" autocomplete="off"></label></div><div class="ttfoot"><label class="chk"><input type="checkbox" data-tt="works" data-i="${i}"${x.works?' checked':''}>${esc(T('自動把作品名稱的標籤放進來'))}</label><button class="mini" data-act="ttdel" data-i="${i}">${esc(T('刪除'))}</button></div></div>`).join('');
@@ -1985,7 +1988,7 @@ function openModal(type,id,extra,subId){
     ttcat=ui.cat;
     tree=treeOf(ttcat).map(x=>({name:x.name,kidsText:(x.kids||[]).join(', '),works:!!x.works}));
   }else if(type==='tagtr'){
-    const set=new Set();treeOf(ui.cat).forEach(x=>{set.add(x.name);(x.kids||[]).forEach(k=>set.add(k));});data.items.filter(it=>it.cat===ui.cat).forEach(it=>it.tags.forEach(t=>set.add(t)));
+    const set=new Set();treeOf(ui.cat).forEach(x=>{set.add(x.name);(x.kids||[]).forEach(k=>set.add(k));});(ui.cat==='作品'?data.works:data.items.filter(it=>it.cat===ui.cat)).forEach(it=>it.tags.forEach(t=>set.add(t)));
     tagkeys=Array.from(set);tagkeys.forEach(t=>{tagtr[t]=((data.tagTr||{})[t]||{}).en||'';});
   }else if(type==='brand'){
     const br=id?findIn(data.items,id):null;
