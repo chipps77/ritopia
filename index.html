@@ -1040,6 +1040,7 @@ function tagModel(cat){
   });
   const others=Object.keys(used).filter(t=>!names.has(t)&&!kidOf[t]).sort(byCount(used));
   if(cat==='廣告代言'&&items.some(it=>it.current))others.unshift('現在');
+  if(cat==='作品')MEDIA_TY.forEach(ty=>{if(data.songs.some(x=>songType(x)===ty)||editing())others.push(ty);});
   return (tmCache[cat]={mains,others,kidOf,used});
 }
 function renderChips(){
@@ -1876,7 +1877,8 @@ function tagtreeHtml(){
   const used={};(m.ttcat==='作品'?data.works:data.items.filter(it=>it.cat===m.ttcat)).forEach(it=>it.tags.forEach(t=>{used[t]=1;}));
   const inTree={};m.tree.forEach(x=>{if(x.name)inTree[x.name]=1;splitTags(x.kidsText).forEach(k=>{inTree[k]=1;});});
   const free=Object.keys(used).filter(t=>!inTree[t]);
-  const rows=m.tree.map((x,i)=>`<div class="ttrow"><div class="two"><label>${esc(T('主標籤'))}<input data-tt="name" data-i="${i}" value="${esc(x.name)}" maxlength="24" autocomplete="off"></label><label>${esc(T('子標籤（用逗號分隔）'))}<input data-tt="kids" data-i="${i}" value="${esc(x.kidsText)}" autocomplete="off"></label></div><div class="ttfoot"><label class="chk"><input type="checkbox" data-tt="works" data-i="${i}"${x.works?' checked':''}>${esc(T('自動把作品名稱的標籤放進來'))}</label><button class="mini" data-act="ttdel" data-i="${i}">${esc(T('刪除'))}</button></div></div>`).join('');
+  const n=m.tree.length;
+  const rows=m.tree.map((x,i)=>`<div class="ttrow"><div class="two"><label>${esc(T('主標籤'))}<input data-tt="name" data-i="${i}" value="${esc(x.name)}" maxlength="24" autocomplete="off"></label><label>${esc(T('子標籤（用逗號分隔）'))}<input data-tt="kids" data-i="${i}" value="${esc(x.kidsText)}" autocomplete="off"></label></div><div class="ttfoot"><label class="chk"><input type="checkbox" data-tt="works" data-i="${i}"${x.works?' checked':''}>${esc(T('自動把作品名稱的標籤放進來'))}</label><span class="vmove"><button class="mini" data-act="ttup" data-i="${i}" ${i===0?'disabled':''} aria-label="${esc(T('上移'))}">↑</button><button class="mini" data-act="ttdown" data-i="${i}" ${i===n-1?'disabled':''} aria-label="${esc(T('下移'))}">↓</button></span><button class="mini" data-act="ttdel" data-i="${i}">${esc(T('刪除'))}</button></div></div>`).join('');
   return `<div class="field"><small>${esc(T('主標籤會顯示在標籤列，點開後下面一排是它的子標籤；子標籤不會再單獨出現在第一排。主標籤本身不需要貼在項目上。'))}</small>${rows||`<p class="muted">${esc(T('還沒有分類。'))}</p>`}<div><button class="btn sec" data-act="ttadd">${esc(T('新增主標籤'))}</button></div>${free.length?`<small>${esc(T('還沒分類的標籤：'))}${esc(free.join('、'))}</small>`:''}</div>`;
 }
 function tagtrHtml(){
@@ -2347,7 +2349,12 @@ case 'editvideo':openModal('video',id,b.getAttribute('data-w'));break;
     case 'edittagtr':openModal('tagtr');break;
     case 'edittree':openModal('tagtree');break;
     case 'ttadd':m.tree.push({name:'',kidsText:'',works:false});renderModal();break;
-    case 'ttdel':m.tree.splice(parseInt(b.getAttribute('data-i'),10),1);renderModal();break;
+case 'ttdel':m.tree.splice(parseInt(b.getAttribute('data-i'),10),1);renderModal();break;
+    case 'ttup':case 'ttdown':{
+      const i=parseInt(b.getAttribute('data-i'),10),j2=act==='ttup'?i-1:i+1;
+      if(j2>=0&&j2<m.tree.length){const t=m.tree[i];m.tree[i]=m.tree[j2];m.tree[j2]=t;renderModal();}
+      break;
+    }
     case 'opensong':navigate('作品',id);break;
     case 'newsong':{const cw=currentWork();openModal('song',null,cw?cw.title:'');break;}
     case 'newaudio':openModal('song',null,'');m.v.type='有聲書';renderModal();break;
