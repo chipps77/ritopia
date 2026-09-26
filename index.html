@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-theme="auto">
+<html lang="zh-Hant" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,30 +10,15 @@
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
-  --bg:#ffffff; --surface:#f2f2f2; --surface-2:#e5e5e5; --ink:#0f0f0f; --muted:#606060;
-  --line:#e5e5e5; --link:#065fd4; --on-ink:#ffffff; --danger:#cc0000;
-  --ocean:#e6eef5; --land:#c5cfdb; --pin:#e0301e; --gold:#f2c230; --rate:#178a3e;
+  color-scheme:dark;
+  --bg:#0f0f0f; --surface:#272727; --surface-2:#3f3f3f; --ink:#f1f1f1; --muted:#aaaaaa;
+  --line:#303030; --link:#3ea6ff; --on-ink:#0f0f0f; --danger:#ff5a4d;
+  --ocean:#182230; --land:#3a4656; --pin:#ff5a4d; --gold:#f2c230; --rate:#46d369;
   --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --bar:80px;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#0f0f0f; --surface:#272727; --surface-2:#3f3f3f; --ink:#f1f1f1; --muted:#aaaaaa;
-    --line:#303030; --link:#3ea6ff; --on-ink:#0f0f0f; --danger:#ff5a4d;
-    --ocean:#182230; --land:#3a4656; --pin:#ff5a4d; --rate:#46d369;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0f0f0f; --surface:#272727; --surface-2:#3f3f3f; --ink:#f1f1f1; --muted:#aaaaaa;
-  --line:#303030; --link:#3ea6ff; --on-ink:#0f0f0f; --danger:#ff5a4d;
-  --ocean:#182230; --land:#3a4656; --pin:#ff5a4d; --rate:#46d369;
-}
-/* the works pages are always a dark, cinematic stage */
-:root.cine{
-  --bg:#141414; --surface:#2b2b2b; --surface-2:#3d3d3d; --ink:#ffffff; --muted:#b3b3b3;
-  --line:#333333; --link:#6cb2ff; --on-ink:#141414; --danger:#ff6b5e; --rate:#46d369;
-}
+/* whole site uses one dark palette (works pages included) */
 *,*::before,*::after{box-sizing:inherit}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
@@ -114,7 +99,6 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .prod{gap:8px}
 .pimg{display:grid;place-items:center;aspect-ratio:1;border-radius:8px;background:var(--surface);overflow:hidden;color:var(--muted);text-decoration:none;font-size:13px;border:0;cursor:pointer;width:100%;font:inherit}
 .pic{display:block;width:90%;height:90%;background-size:contain;background-repeat:no-repeat;background-position:center}
-@media (prefers-color-scheme:light){.pic{mix-blend-mode:multiply}}
 .pimg .ph{display:flex;flex-direction:column;align-items:center;gap:6px}
 .price{font-size:21px;font-weight:700;line-height:1.2}
 
@@ -299,6 +283,7 @@ button.thumb{display:block;width:100%;padding:0;border:0;cursor:pointer}
 button.ttl{width:100%;padding:0;border:0;background:none;text-align:left;font:inherit;font-size:16px;font-weight:500;line-height:1.4;cursor:pointer}
 .about{max-width:46em;padding:20px 0 6px}
 .about h2{margin:0 0 8px;font-size:clamp(26px,4vw,36px);font-weight:900;line-height:1.2}
+.about .bio{font-size:12px}
 .about+.profile{margin-top:20px;padding-top:26px;border-top:1px solid var(--line)}
 .contact{max-width:46em;margin-top:36px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .contact .rowh{margin:10px 0 6px;font-size:13px;font-weight:600;color:var(--muted)}
@@ -843,7 +828,7 @@ try{
 if(!validDetail(ui.cat,ui.work))ui.work='';
 const saveUi=()=>{try{sessionStorage.setItem(UIKEY,JSON.stringify(ui));}catch(e){}};
 
-let mini=false;try{mini=localStorage.getItem('actor-hub-mini')==='1';}catch(e){}
+let mini=true;try{const s=localStorage.getItem('actor-hub-mini');if(s!==null)mini=s==='1';}catch(e){}
 let canEdit=false,artifact=null,status='',m=null,saveT=null,moreOpen=false,mv=null,selPlace='',lb=null,confirmStill='',heroIdx=0,heroHold=0,heroHover=false,photoIdx=0,photoHold=0,photoHover=false,lastWaterFxId='';
 const editing=()=>canEdit&&ui.edit;
 const isMobile=()=>!!(window.matchMedia&&window.matchMedia('(max-width:860px)').matches);
