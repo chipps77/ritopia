@@ -598,7 +598,7 @@ const I18N={
   '頂部圖片':'Top image','訪談頁最上方的圖片，同時也是卡片縮圖。橫式 16:9，會自動裁切並縮小。':'The image at the top of the interview page and the card thumbnail. 16:9 landscape, cropped and resized automatically.',
   '問答':'Q&A','問題':'Question','回答':'Answer','原文':'Original','新增問題':'Add question','問題 {n}':'Question {n}','上移':'Move up','下移':'Move down','顯示原文':'Show original',
   '還沒有訪談內容。':'No interview content yet.','人總是在改變，不要用片段的文字定義一個人。':"People are always changing. Don't define a person by fragments of text.",
-  '← 訪談':'← Interviews','前往原始出處':'Go to the original source',
+  '← 訪談':'← Interviews','← 節目':'← Shows','新增子分類':'Add sub-category','編輯這一個子分類':'Edit this sub-category','ZDNet Korea 報導':'ZDNet Korea report','前往原始出處':'Go to the original source',
   '地址':'Address','地圖連結（選填，韓國預設用 Naver、其他用 Google）':'Map link (optional; Naver for Korea, Google elsewhere)','在 Naver 地圖開啟':'Open in Naver Map','開啟地圖連結':'Open map link',
   '例如 2024-05-12（節目依日期由舊到新排列）':'e.g. 2024-05-12 (shows are listed oldest to newest)',
   '屆數':'Edition','例如 58':'e.g. 58','新增旁白／說明':'Add narration / caption','旁白／說明':'Narration / caption','說明文字（較小、灰色）':'Caption style (smaller, grey)','新增問答':'Add Q&A',
@@ -812,6 +812,7 @@ function awardName(a){
   if(!ed)return nm;
   return lang===BASE?`第${ed}屆${nm}`:(lang==='en'?`${ordEn(ed)} ${nm}`:`${ed} ${nm}`);
 }
+const YR=s=>{s=String(s||'').trim();return lang!==BASE?s.replace(/現在/g,'Present'):s;};
 const wname=s=>{const w=data.works.find(x=>x.title===s);return w?L(w,'title'):s;};
 
 const validDetail=(cat,id)=>!!id&&((cat==='作品'&&(!!findIn(data.works,id)||!!findIn(data.songs,id)))||(cat==='獎項'&&!!(findIn(data.awards,id)||{}).id&&findIn(data.awards,id).result==='得獎')||(cat==='訪談'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='訪談')||(cat==='節目'&&isLive(findIn(data.items,id)||{}))||(cat==='周邊'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='周邊')||(cat==='廣告代言'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='廣告代言'));
@@ -1213,12 +1214,12 @@ function allCampaignsOf(b){
 function brandCard(b){
   const ed=editing(),title=L(b,'title'),cs=allCampaignsOf(b),cover=cs.find(c=>c.thumb)||cs[0]||{};
   const yr=String(b.yearLabel||'').trim()||brandDateOf(b);
-  return `<article class="camcard"><button class="camth${cover.thumb?' has':''}" data-act="openbrand" data-id="${esc(b.id)}" style="${thumbStyle(cover,title+b.id)}" aria-label="${esc(title)}">${b.current?`<span class="camnow">${esc(T('現在'))}</span>`:''}<div class="camov"><span class="camy">${esc(yr)}${cs.length>1?` · ${cs.length}`:''}</span><h4>${esc(title)}</h4></div></button>`+
+  return `<article class="camcard"><button class="camth${cover.thumb?' has':''}" data-act="openbrand" data-id="${esc(b.id)}" style="${thumbStyle(cover,title+b.id)}" aria-label="${esc(title)}">${b.current?`<span class="camnow">${esc(T('現在'))}</span>`:''}<div class="camov"><span class="camy">${esc(YR(yr))}${cs.length>1?` · ${cs.length}`:''}</span><h4>${esc(title)}</h4></div></button>`+
     (ed?`<div class="tools"><button class="mini" data-act="editbrand" data-id="${esc(b.id)}">${esc(T('編輯品牌'))}</button></div>`:'')+`</article>`;
 }
 function campaignCard(c,brandId,subId){
   const ed=editing(),href=isSafe(c.url)?esc(c.url):'#',title=L(c,'title'),isVideo=isSafe(c.url)&&/youtu|vimeo|\.(mp4|mov)$/i.test(c.url);
-  return `<article class="camcard"><a class="camth${c.thumb?' has':''}" ${href!=='#'?`href="${href}" target="_blank" rel="noopener noreferrer"`:''} style="${thumbStyle(c,c.title+c.id)}">${isVideo?PLAY:''}<div class="camov"><span class="camy">${esc(c.date||'')}</span><h4>${esc(title)}</h4></div></a>`+
+  return `<article class="camcard"><a class="camth${c.thumb?' has':''}" ${href!=='#'?`href="${href}" target="_blank" rel="noopener noreferrer"`:''} style="${thumbStyle(c,c.title+c.id)}">${isVideo?PLAY:''}<div class="camov"><span class="camy">${esc(YR(c.date))}</span><h4>${esc(title)}</h4></div></a>`+
     (ed?`<div class="tools"><button class="mini" data-act="editcampaign" data-id="${esc(c.id)}" data-b="${esc(brandId)}" data-s="${esc(subId||'')}">${esc(T('編輯這張卡片'))}</button></div>`:'')+`</article>`;
 }
 function vrowHtml(v,i,w,showWork,n){
@@ -1362,7 +1363,7 @@ function viewSong(x){
     `<div class="dinfo"><h1>${esc(title)}</h1><div class="meta2"><span>${esc(T(ty))}</span>${artist?`<span>${esc(artist)}</span>`:''}${x.year?`<span>${esc(x.year)}</span>`:''}</div>${(syn||note)?`<p class="syn full">${esc(syn||note)}</p>`:''}`+
     `<div class="hbtns">${isSafe(x.url)?`<a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(T(ty==='有聲書'?'收聽':(ty==='MV'?'觀看':'聆聽')))}</a>`:''}${isSafe(x.mvUrl)?`<a class="btn sec" href="${esc(x.mvUrl)}" target="_blank" rel="noopener noreferrer">${esc(T('觀看 MV'))}</a>`:''}${wk?`<button class="btn sec" data-act="openwork" data-id="${esc(wk.id)}">${esc(T('查看作品'))}</button>`:''}${ed?`<button class="btn sec" data-act="editsong" data-id="${esc(x.id)}">${esc(T('編輯'))}</button>`:''}</div></div></section>`+
     `<h3 class="rowh">${esc(T('詳細資訊'))}</h3>${rows.length?`<dl class="kv big">${rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`:`<p class="muted">${esc(T('還沒有詳細資訊。'))}</p>`}`+
-    (links.length?`<h3 class="rowh">${esc(T('相關連結'))}</h3><div class="links">${links.map(l=>`<a class="lnk" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.title)}</a>`).join('')}</div>`:'')+
+    (links.length?`<h3 class="rowh">${esc(T('相關連結'))}</h3><div class="links">${links.map(l=>`<a class="lnk" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(T(l.title))}</a>`).join('')}</div>`:'')+
     (note&&syn?`<p class="muted pad">${esc(note)}</p>`:'')+
     (ty!=='有聲書'&&(lyrBlocks.length||ed)?lyricsSectionHtml(lyrBlocks,ed):'');
 }
@@ -1432,7 +1433,7 @@ function subBrandCard(sb,parent){
   const title=L(sb,'title'),cs=(sb.campaigns||[]),cover=cs.find(c=>c.thumb)||cs[0]||{};
   const yr=String(sb.yearLabel||'').trim()||brandDateOf(sb);
   const ed=editing();
-  return `<article class="camcard"><button class="camth${cover.thumb?' has':''}" data-act="opensub" data-w="${esc(parent.id)}" data-s="${esc(sb.id)}" style="${thumbStyle(cover,title+sb.id)}" aria-label="${esc(title)}">${sb.current?`<span class="camnow">${esc(T('現在'))}</span>`:''}<div class="camov"><span class="camy">${esc(yr)}${cs.length>1?` · ${cs.length}`:''}</span><h4>${esc(title)}</h4></div></button>`+
+  return `<article class="camcard"><button class="camth${cover.thumb?' has':''}" data-act="opensub" data-w="${esc(parent.id)}" data-s="${esc(sb.id)}" style="${thumbStyle(cover,title+sb.id)}" aria-label="${esc(title)}">${sb.current?`<span class="camnow">${esc(T('現在'))}</span>`:''}<div class="camov"><span class="camy">${esc(YR(yr))}${cs.length>1?` · ${cs.length}`:''}</span><h4>${esc(title)}</h4></div></button>`+
     (ed?`<div class="tools"><button class="mini" data-act="editsubbrand" data-w="${esc(parent.id)}" data-s="${esc(sb.id)}">${esc(T('編輯這一個子分類'))}</button></div>`:'')+`</article>`;
 }
 function viewLinks(cat){
@@ -1443,7 +1444,7 @@ function viewLinks(cat){
     if(brand.subBrands&&brand.subBrands.length&&!sub){
       return `<div class="crumb"><button class="btn sec" data-act="cat" data-c="廣告代言">${esc(T('← 廣告代言'))}</button></div>`+
         `<h2 class="brandh">${esc(L(brand,'title'))}${brand.current?`<span class="camnow inline">${esc(T('現在'))}</span>`:''}</h2>`+
-        `<p class="muted brandyr">${esc(String(brand.yearLabel||'').trim()||brandDateOf(brand))}</p>`+
+        `<p class="muted brandyr">${esc(YR(String(brand.yearLabel||'').trim()||brandDateOf(brand)))}</p>`+
         `<div class="grid campaign">${brand.subBrands.map(sb=>subBrandCard(sb,brand)).join('')}</div>`+
         (ed?`<div><button class="btn sec" data-act="newsubbrand" data-w="${esc(brand.id)}">${esc(T('新增子分類'))}</button><button class="btn sec" data-act="editbrand" data-id="${esc(brand.id)}">${esc(T('編輯品牌'))}</button></div>`:'');
     }
@@ -1454,7 +1455,7 @@ function viewLinks(cat){
     const addBtn=sub?`<button class="btn" data-act="newcampaign" data-b="${esc(brand.id)}" data-s="${esc(sub.id)}">${esc(T('新增這個品牌的照片／影片'))}</button>`:`<button class="btn" data-act="newcampaign" data-b="${esc(brand.id)}">${esc(T('新增這個品牌的照片／影片'))}</button>`;
     return `<div class="crumb">${backAct}</div>`+
       `<h2 class="brandh">${esc(L(activeUnit,'title'))}${activeUnit.current?`<span class="camnow inline">${esc(T('現在'))}</span>`:''}</h2>`+
-      `<p class="muted brandyr">${esc(String(activeUnit.yearLabel||'').trim()||brandDateOf(activeUnit))}</p>`+
+      `<p class="muted brandyr">${esc(YR(String(activeUnit.yearLabel||'').trim()||brandDateOf(activeUnit)))}</p>`+
       (cs.length?`<div class="grid campaign">${cs.map(c=>campaignCard(c,brand.id,sub?sub.id:'')).join('')}</div>`:`<p class="muted pad">${esc(T('這個品牌還沒有照片或影片。'))}</p>`)+
       (ed?`<div>${addBtn}${editBrandBtn}</div>`:'');
   }
