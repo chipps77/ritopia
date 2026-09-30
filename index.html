@@ -552,6 +552,7 @@ const I18N={
   '{n} 個地點':p=>p.n+(p.n===1?' location':' locations'),
   '{n} 件商品':p=>p.n+(p.n===1?' product':' products'),
   '{n} 個連結':p=>p.n+(p.n===1?' link':' links'),
+  '{n} 個品牌':p=>p.n+(p.n===1?' brand':' brands'),
   '站名':'Site name',
   '編輯簡介':'Edit profile','新增影片':'Add video','新增作品':'Add work','新增連結':'Add link','新增商品':'Add product','新增獎項':'Add award','新增地點':'Add location',
   '卡片下方的欄位可以直接輸入標籤，按 Enter 新增。':'Type a tag under a card and press Enter to add it.',
@@ -965,7 +966,7 @@ function renderPagehead(){
   if(ui.q.trim())h=`<h2>${esc(T('搜尋結果'))}</h2><span>${esc(T('包含所有分頁'))}</span>`;
   else if(ui.cat==='主頁'||currentWork()||currentSong()||currentAward()||currentInterview())h='';
   else{
-    const key={作品:'{n} 部作品',獎項:'{n} 個獎項',拍攝地圖:'{n} 個地點',周邊:'{n} 件商品'}[ui.cat]||'{n} 個連結';
+    const key={作品:'{n} 部作品',獎項:'{n} 個獎項',拍攝地圖:'{n} 個地點',周邊:'{n} 件商品',廣告代言:'{n} 個品牌'}[ui.cat]||'{n} 個連結';
     h=`<h2>${esc(T(ui.cat))}</h2><span>${esc(T(key,{n:pageCount(ui.cat)}))}</span>`;
   }
   $('pagehead').innerHTML=h;
