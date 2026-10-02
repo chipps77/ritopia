@@ -587,7 +587,7 @@ const I18N={
   '每行一項，格式「欄位：內容」，例如「出生：1990 年」。':'One item per line as "Label: value", e.g. "Born: 1990".',
   '官方連結':'Official links','每行一個，格式「名稱：網址」，例如「Instagram：https://…」。':'One per line as "Name: URL", e.g. "Instagram: https://…".',
   '劇照':'Stills','新增劇照':'Add stills','還沒有劇照。':'No stills yet.','精選大圖':'Featured banner','作品頁最上方的大圖，建議橫式圖片。沒上傳就用海報。':'The large image at the top of the Works page. Landscape works best. The poster is used if none is set.','關閉':'Close','上一張':'Previous','下一張':'Next','再按一次刪除':'Press again to delete','劇照最多 24 張':'Up to 24 stills per work','處理圖片中…':'Processing images…',
-  '縮圖':'Thumbnail','橫式 16:9，會自動裁切並縮小。沒上傳就用自動配色的封面。':'16:9 landscape, cropped and resized automatically. A generated cover is used if none is set.',
+  '縮圖':'Thumbnail','直式 4:5，和卡片一樣的比例，會自動裁切並縮小。沒上傳就用自動配色的封面。':'4:5 portrait, the same shape as the cards. Cropped and resized automatically. A generated cover is used if none is set.','橫式 16:9，會自動裁切並縮小。沒上傳就用自動配色的封面。':'16:9 landscape, cropped and resized automatically. A generated cover is used if none is set.',
   '感言':'Acceptance speech','得獎照片':'Photos','影片連結':'Videos','新增照片':'Add photos','還沒有照片。':'No photos yet.','還沒有影片連結。':'No video links yet.','還沒有感言。':'No acceptance speech yet.','← 獎項':'← Awards','新增影片連結':'Add video link','編輯影片連結':'Edit video link','照片最多 24 張':'Up to 24 photos per award','找不到這個獎項。':'That award could not be found.',
   '顯示在作品頁最上方（勾選多部會輪播）':'Show at the top of the Works page (several will rotate)','第 {n} 張':'Slide {n}','精選作品':'Featured works',
   '獎項類別':'Award category','相關作品':'Related work','查看作品':'View work',
@@ -1734,6 +1734,7 @@ function loadImage(file,maxW,ratio,cb){
 }
 /* fields marked tr:true can be translated per language */
 const THUMB_F={k:'thumb',l:'縮圖',t:'img',ratio:16/9,wide:true,maxw:640,hint:'橫式 16:9，會自動裁切並縮小。沒上傳就用自動配色的封面。'};
+const THUMB_V={k:'thumb',l:'縮圖',t:'img',ratio:4/5,maxw:640,hint:'直式 4:5，和卡片一樣的比例，會自動裁切並縮小。沒上傳就用自動配色的封面。'};
 function specFor(){
   const t=m.type;
   if(t==='link')return {title:m.id?'編輯連結':'新增連結',del:!!m.id,rows:[
@@ -1756,7 +1757,7 @@ function specFor(){
   if(t==='campaign')return {title:m.id?'編輯照片／影片':'新增照片／影片',del:!!m.id,rows:[
     {k:'title',l:'標題',t:'text',max:120,tr:true},
     [{k:'date',l:'日期（選填）',t:'text',ph:'例如 2025-04',max:20},{k:'url',l:'連結（選填）',t:'text',ph:'https://',mode:'url'}],
-    THUMB_F,
+    THUMB_V,
     {k:'note',l:'備註（選填）',t:'text',max:120,tr:true}]};
   if(t==='product')return {title:m.id?'編輯商品':'新增商品',del:!!m.id,rows:[
     {k:'title',l:'商品名稱',t:'text',max:120,tr:true},
