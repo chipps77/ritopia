@@ -234,6 +234,18 @@ button.camth{border:0;background-color:var(--surface);cursor:pointer;text-align:
 .camadd .addth{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;aspect-ratio:4/5;border:1.5px dashed var(--line);border-radius:14px;background:none;color:var(--muted);font-size:26px}
 .camadd .addth span{font-size:12.5px;text-align:center;padding:0 10px}
 .camcard .tools{margin-top:6px}
+#fxscrim{z-index:60}
+#fxdlg{z-index:61;gap:12px}
+@media (min-width:861px){#fxdlg{width:min(480px,calc(100% - 24px))}}
+.fxdlg .fxtext{display:flex;flex-direction:column;gap:8px}
+.fxdlg .fxtext p{margin:0;font-size:14.5px;line-height:1.7}
+.fxdlg .fxnote{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.fxdlg label.fxchk{align-items:flex-start;font-weight:500;line-height:1.6;cursor:pointer}
+.fxdlg label.fxchk input{flex:none;margin-top:3px}
+.fxdlg .fxact{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.fxdlg .fxact .btn{height:auto;min-height:38px;padding:8px 16px;white-space:normal}
+.fxdlg .btn:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:480px){.fxdlg .fxact .btn{flex:1 1 100%}}
 .campin{position:absolute;right:8px;top:8px;padding:3px 9px;border-radius:20px;background:var(--gold);color:#1a1a1a;font-size:11px;font-weight:800;letter-spacing:.02em}
 .hilist{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .hilist li{line-height:1.6}
@@ -565,7 +577,7 @@ const I18N={
   '站名':'Site name',
   '編輯簡介':'Edit profile','新增影片':'Add video','新增作品':'Add work','新增連結':'Add link','新增商品':'Add product','新增獎項':'Add award','新增地點':'Add location',
   '卡片下方的欄位可以直接輸入標籤，按 Enter 新增。':'Type a tag under a card and press Enter to add it.',
-  '＋ 新增標籤':'+ Add tag','新增標籤':'Add tag','移除標籤 {t}':'Remove tag {t}','編輯這張卡片':'Edit card','編輯商品':'Edit product','設為封面':'Set as cover','取消封面':'Remove cover','設為品牌封面':'Set as brand cover','封面':'Cover','詳細資訊（選填）':'Details (optional)',
+  '＋ 新增標籤':'+ Add tag','新增標籤':'Add tag','移除標籤 {t}':'Remove tag {t}','編輯這張卡片':'Edit card','視覺效果提醒':'Visual effects notice','《惡鬼》頁面有一個小彩蛋，包含突然變暗、高對比的畫面變化，以及短暫的畫面干擾效果。若你有光敏性癲癇或其他視覺敏感狀況，這些效果可能會造成不適。':'The Revenant page has a small easter egg with sudden darkness, high-contrast visual changes and brief screen-glitch effects. They may cause discomfort for people with photosensitive epilepsy or other visual sensitivities.','特效預設為關閉，不開啟也能正常瀏覽所有內容。之後可以隨時在《惡鬼》頁面的「視覺特效」按鈕更改。':'Effects are off by default, and you can browse everything normally without them. You can change this any time with the Visual Effects button on the Revenant page.','你的裝置已開啟「減少動態效果」，即使選擇開啟，特效也不會播放。':'Your device has Reduce Motion turned on, so the effects will not play even if you enable them.','我了解可能的風險、沒有已知的光敏感問題，並自願選擇開啟視覺效果。':'I understand the potential risks, have no known photosensitivity issues, and voluntarily choose to enable the visual effects.','不開啟特效，繼續瀏覽':'Continue Without Effects','保持關閉':'Keep Effects Off','開啟特效':'Enable Effects','勾選上方說明後才能開啟。':'Check the statement above to enable.','視覺特效：開':'Visual Effects: On','視覺特效：關':'Visual Effects: Off','編輯商品':'Edit product','設為封面':'Set as cover','取消封面':'Remove cover','設為品牌封面':'Set as brand cover','封面':'Cover','詳細資訊（選填）':'Details (optional)',
   '{kind}，來自《{title}》':'{kind}, from "{title}"',
   '相關連結':'Related link',
   '這個作品還沒有拍攝地點。':'No filming locations for this work yet.','還沒有拍攝地點。':'No filming locations yet.','在 Google 地圖開啟':'Open in Google Maps',
@@ -1442,7 +1454,7 @@ function viewWork(w){
   const tags=w.tags.length?`<div class="tags">${w.tags.map(tg=>`<span class="muted">#${esc(tagLabel(tg))}</span>`).join('')}</div>`:'';
   return `<div class="crumb"><button class="btn sec" data-act="cat" data-c="作品">${esc(T('← 作品'))}</button></div>`+
   `<section class="dhero"><div class="bd${bg.cls}" style="${bg.style}"></div><div class="grad"></div>${w.title==='下女的誘惑'?`<button class="dposter clickable" data-act="hmfx" style="${bd}" aria-label="${esc(title)}"></button>`:`<div class="dposter" style="${bd}" role="img" aria-label="${esc(title)}"></div>`}`+
-  `<div class="dinfo"><h1>${w.title==='二十五，二十一'&&lang==='zh'?`二<button class="jhspan" data-act="jhFx">十五</button>，二十一`:esc(title)}</h1><div class="meta2">${rating}</div>${tags}${syn?`<p class="syn full">${w.title==='泰梨的課後表演班'?highlightWord(syn,['孩子們','children'],'trFx'):esc(syn)}</p>`:''}`+`<div class="hbtns">${play&&isSafe(play.url)?`<a class="btn" href="${esc(play.url)}" target="_blank" rel="noopener noreferrer">${esc(T('播放正片'))}</a>`:''}${ed?`<button class="btn sec" data-act="editwork" data-id="${esc(w.id)}">${esc(T('編輯作品資料'))}</button>`:''}<button class="btn sec" data-act="sharework" data-id="${esc(w.id)}">${esc(T('分享'))}</button></div></div></section>`+
+  `<div class="dinfo"><h1>${w.title==='二十五，二十一'&&lang==='zh'?`二<button class="jhspan" data-act="jhFx">十五</button>，二十一`:esc(title)}</h1><div class="meta2">${rating}</div>${tags}${syn?`<p class="syn full">${w.title==='泰梨的課後表演班'?highlightWord(syn,['孩子們','children'],'trFx'):esc(syn)}</p>`:''}`+`<div class="hbtns">${play&&isSafe(play.url)?`<a class="btn" href="${esc(play.url)}" target="_blank" rel="noopener noreferrer">${esc(T('播放正片'))}</a>`:''}${ed?`<button class="btn sec" data-act="editwork" data-id="${esc(w.id)}">${esc(T('編輯作品資料'))}</button>`:''}<button class="btn sec" data-act="sharework" data-id="${esc(w.id)}">${esc(T('分享'))}</button>${w.title==='惡鬼'?`<button class="btn sec" data-act="revfx" aria-haspopup="dialog" aria-pressed="${fxPref()==='enabled'?'true':'false'}">${esc(T(fxPref()==='enabled'?'視覺特效：開':'視覺特效：關'))}</button>`:''}</div></div></section>`+
   `<h3 class="rowh">${esc(T('詳細資訊'))}</h3>${rows.length?`<dl class="kv big">${rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`:`<p class="muted">${esc(T('還沒有詳細資訊。'))}</p>`}`+
   `<div class="tabs" role="tablist">${tabsOf(w).map(k=>`<button class="tab" role="tab" aria-selected="${ui.tab===k}" data-act="tab" data-k="${k}">${esc(T(k))}<span class="cnt">${k==='劇照'?w.stills.length:(k==='歌曲'?songsOf(w,'歌曲').length:w.videos.filter(v=>v.kind===k).length)}</span></button>`).join('')}</div>`+
   (ui.tab==='劇照'?stillsHtml(w,ed):ui.tab==='歌曲'?songsPane(w,ed,'歌曲'):`<div class="vlist">${vids.length?vids.map((v,i)=>vrowHtml(v,i,w,false,vids.length)).join(''):`<p class="muted pad">${esc(T('還沒有{kind}連結。',{kind:T(ui.tab)}))}</p>`}</div>`+(ed?`<button class="btn" data-act="addvideo">${esc(T('新增{kind}',{kind:T(ui.tab)}))}</button>`:''));
@@ -2232,8 +2244,13 @@ function showPage(cat,work){
   saveUi();renderAll();window.scrollTo(0,0);
   const wa=currentAward();if(wa&&wa.result==='得獎')confetti();
   const w2=currentWork();
-  if(w2&&w2.title==='惡鬼'&&lastWaterFxId!==w2.id){waterDrip();lastWaterFxId=w2.id;}
-  else if(!w2||w2.title!=='惡鬼')lastWaterFxId='';
+  if(w2&&w2.title==='惡鬼'&&lastWaterFxId!==w2.id){
+    const fp=fxPref();
+    if(fp==='enabled')waterDrip();
+    else if(fp===null&&fxAskedId!==w2.id){fxAskedId=w2.id;fxOpenDialog('first');}
+    lastWaterFxId=w2.id;
+  }
+  else if(!w2||w2.title!=='惡鬼'){lastWaterFxId='';fxAskedId='';fxCloseDialog(false);}
 }
 function navigate(cat,work){
   showPage(cat,work);
@@ -2384,6 +2401,7 @@ case 'ttdel':m.tree.splice(parseInt(b.getAttribute('data-i'),10),1);renderModal(
     case 'trFx':tariFx();break;
     case 'jhFx':jeongFx();break;
     case 'sharework':shareWork(id);break;
+    case 'revfx':fxToggle();break;
     case 'openaward':navigate('獎項',id);break;
     case 'openinterview':navigate('訪談',id);break;
     case 'newinterview':openModal('interview');break;
@@ -2569,17 +2587,238 @@ function openShareModal(msgHtml){
 }
 
 /* ---------- water drip (opening 惡鬼) ---------- */
-function waterDrip(){
-  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const old=document.getElementById('waterfx');if(old)old.remove();
-  const el=document.createElement('div');el.id='waterfx';el.setAttribute('aria-hidden','true');
-  el.style.cssText='position:fixed;inset:0;z-index:9999;pointer-events:none;background:#000;opacity:0';
-  document.documentElement.appendChild(el);
-  const events=[[0,.85],[70,0],[130,.7],[210,0],[460,.9],[530,0],[590,.6],[660,0],[720,.75],[790,0]];
-  events.forEach(([t,op])=>{
-    setTimeout(()=>{if(document.documentElement.contains(el))el.style.opacity=String(op);},t);
+/* REVENANT — Five Faults */
+function waterDrip() {
+  // Accessibility: disable effects for reduced motion
+  if (window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches) return;
+
+  // Prevent overlapping effects
+  if (window.__revenantCleanup) {
+    window.__revenantCleanup();
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'revenant-glitch';
+
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    pointer-events: none;
+    overflow: hidden;
+    isolation: isolate;
+  `;
+
+  document.documentElement.appendChild(overlay);
+
+  function layer(css) {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position:absolute;
+      pointer-events:none;
+      opacity:0;
+      transition:none;
+      ${css}
+    `;
+    overlay.appendChild(el);
+    return el;
+  }
+
+  // 1. Full-screen blackout
+  const black = layer(`
+    inset:0;
+    background:#000;
+  `);
+
+  // 2. Horizontal signal displacement
+  const tear = layer(`
+    left:10%;
+    top:35%;
+    width:80%;
+    height:14%;
+    background:rgba(65,68,72,.30);
+    border-top:1px solid rgba(150,150,150,.25);
+    border-bottom:1px solid rgba(0,0,0,.4);
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+  `);
+
+  // 3. Localized dark interference
+  const interference = layer(`
+    left:0;
+    top:20%;
+    width:100%;
+    height:55%;
+    background:rgba(0,0,0,.18);
+  `);
+
+  // 4. Thin horizontal signal line
+  const line = layer(`
+    left:0;
+    top:12%;
+    width:100%;
+    height:3px;
+    background:linear-gradient(
+      90deg,
+      transparent,
+      rgba(105,110,115,.55) 20%,
+      rgba(35,38,42,.7) 60%,
+      transparent
+    );
+  `);
+
+  // 5. Subtle displaced afterimage
+  const ghost = layer(`
+    left:22%;
+    top:51%;
+    width:63%;
+    height:36px;
+    background:rgba(35,38,42,.18);
+    border:1px solid rgba(100,105,110,.25);
+    backdrop-filter:blur(1px);
+    -webkit-backdrop-filter:blur(1px);
+  `);
+
+  const timers = [];
+  let finished = false;
+
+  function at(ms, fn) {
+    timers.push(setTimeout(() => {
+      if (!finished && overlay.isConnected) fn();
+    }, ms));
+  }
+
+  function cleanup() {
+    if (finished) return;
+    finished = true;
+    timers.forEach(clearTimeout);
+    overlay.remove();
+
+    if (window.__revenantCleanup === cleanup) {
+      window.__revenantCleanup = null;
+    }
+  }
+
+  window.__revenantCleanup = cleanup;
+
+  // EVENT 1 — Sudden blackout
+  at(0, () => {
+    black.style.opacity = '0.85';
   });
-  setTimeout(()=>{if(document.documentElement.contains(el))el.remove();},1040);
+
+  at(140, () => {
+    black.style.opacity = '0';
+  });
+
+  // EVENT 2 — Signal tearing
+  at(210, () => {
+    tear.style.opacity = '0.68';
+    tear.style.transform = 'translateX(7px)';
+  });
+
+  at(300, () => {
+    tear.style.opacity = '0';
+  });
+
+  // EVENT 3 — Dark interference
+  at(460, () => {
+    interference.style.opacity = '1';
+  });
+
+  at(535, () => {
+    interference.style.opacity = '0';
+  });
+
+  // EVENT 4 — Horizontal artifact
+  at(590, () => {
+    line.style.opacity = '0.62';
+  });
+
+  at(665, () => {
+    line.style.opacity = '0';
+  });
+
+  // EVENT 5 — Residual signal
+  at(720, () => {
+    ghost.style.opacity = '0.4';
+    ghost.style.transform = 'translateX(-9px)';
+  });
+
+  at(815, () => {
+    ghost.style.opacity = '0';
+  });
+
+  // Remove everything
+  at(960, cleanup);
+}
+/* ---------- 惡鬼 visual effects: opt-in consent ---------- */
+const FX_KEY='topia-revenant-fx';
+let fxMem=null,fxDlg=null,fxAskedId='';
+function fxStore(){try{const t='__topia_fx_test';localStorage.setItem(t,'1');localStorage.removeItem(t);return localStorage;}catch(e){return null;}}
+function fxPref(){
+  const st=fxStore();
+  if(!st)return fxMem||'disabled';
+  try{const v=st.getItem(FX_KEY);return (v==='enabled'||v==='disabled')?v:null;}catch(e){return fxMem||'disabled';}
+}
+function fxSet(v){fxMem=v;const st=fxStore();if(st){try{st.setItem(FX_KEY,v);}catch(e){}}}
+function fxCloseDialog(rerender){
+  if(!fxDlg)return;
+  const d=fxDlg;fxDlg=null;
+  document.removeEventListener('keydown',d.key,true);
+  d.scrim.remove();d.box.remove();
+  if(rerender)renderAll();
+  const back=(d.ret&&d.ret.isConnected)?d.ret:document.querySelector('[data-act="revfx"]');
+  if(back&&back.focus){try{back.focus({preventScroll:true});}catch(e){back.focus();}}
+}
+function fxOpenDialog(mode){
+  if(fxDlg)return;
+  const ret=document.activeElement;
+  const rm=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const scrim=document.createElement('div');scrim.className='scrim';scrim.id='fxscrim';
+  const box=document.createElement('div');box.className='dlg fxdlg';box.id='fxdlg';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+  box.setAttribute('aria-labelledby','fxttl');box.setAttribute('aria-describedby','fxdesc');
+  box.setAttribute('lang',langInfo().html);
+  box.innerHTML=`<h2 id="fxttl">${esc(T('視覺效果提醒'))}</h2>`+
+    `<div id="fxdesc" class="fxtext"><p>${esc(T('《惡鬼》頁面有一個小彩蛋，包含突然變暗、高對比的畫面變化，以及短暫的畫面干擾效果。若你有光敏性癲癇或其他視覺敏感狀況，這些效果可能會造成不適。'))}</p>`+
+    `<p>${esc(T('特效預設為關閉，不開啟也能正常瀏覽所有內容。之後可以隨時在《惡鬼》頁面的「視覺特效」按鈕更改。'))}</p>`+
+    (rm?`<p class="fxnote">${esc(T('你的裝置已開啟「減少動態效果」，即使選擇開啟，特效也不會播放。'))}</p>`:'')+`</div>`+
+    `<label class="chk fxchk"><input type="checkbox" id="fxagree"><span>${esc(T('我了解可能的風險、沒有已知的光敏感問題，並自願選擇開啟視覺效果。'))}</span></label>`+
+    `<div class="fxact"><button type="button" class="btn sec" id="fxno">${esc(T(mode==='first'?'不開啟特效，繼續瀏覽':'保持關閉'))}</button>`+
+    `<button type="button" class="btn" id="fxyes" disabled aria-describedby="fxyeshint">${esc(T('開啟特效'))}</button></div>`+
+    `<p class="fxnote" id="fxyeshint">${esc(T('勾選上方說明後才能開啟。'))}</p>`;
+  document.body.appendChild(scrim);document.body.appendChild(box);
+  const agree=box.querySelector('#fxagree'),yes=box.querySelector('#fxyes'),no=box.querySelector('#fxno');
+  agree.checked=false;
+  agree.addEventListener('change',()=>{yes.disabled=!agree.checked;});
+  yes.addEventListener('click',()=>{if(!agree.checked)return;fxSet('enabled');fxCloseDialog(true);});
+  no.addEventListener('click',()=>{fxSet('disabled');fxCloseDialog(true);});
+  scrim.addEventListener('click',()=>fxCloseDialog(false));
+  const key=ev=>{
+    if(!fxDlg)return;
+    if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();fxCloseDialog(false);return;}
+    if(ev.key==='Tab'){
+      const f=[...box.querySelectorAll('input,button')].filter(x=>!x.disabled);
+      if(!f.length)return;
+      const a=f[0],z=f[f.length-1],cur=document.activeElement;
+      if(!box.contains(cur)){ev.preventDefault();a.focus();}
+      else if(ev.shiftKey&&cur===a){ev.preventDefault();z.focus();}
+      else if(!ev.shiftKey&&cur===z){ev.preventDefault();a.focus();}
+    }
+  };
+  document.addEventListener('keydown',key,true);
+  fxDlg={scrim,box,key,ret};
+  agree.focus();
+}
+function fxToggle(){
+  if(fxPref()==='enabled'){
+    fxSet('disabled');
+    if(window.__revenantCleanup)window.__revenantCleanup();
+    renderAll();
+    const b=document.querySelector('[data-act="revfx"]');if(b)b.focus();
+  }else fxOpenDialog('settings');
 }
 
 /* ---------- floating quotes (下女的誘惑 poster click) ---------- */
@@ -2769,6 +3008,7 @@ const hr=parseHash();
 if(hr){ui.cat=hr.cat;ui.work=validDetail(hr.cat,hr.work)?hr.work:'';}
 else{try{history.replaceState(null,'',hashOf(ui.cat,ui.work));}catch(e){}}
 renderAll();
+{const w0=currentWork();if(w0&&w0.title==='惡鬼'&&fxPref()===null&&!wasEditEntry){fxAskedId=w0.id;fxOpenDialog('first');}}
 if(wasEditEntry)promptForToken();
 else if(ghToken()){canEdit=true;renderAll();}
 fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(fresh=>{
