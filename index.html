@@ -716,6 +716,7 @@ const $=id=>document.getElementById(id);
 const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=(p,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const uid=()=>'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const ytThumb=u=>{const x=String(u||'').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/i);return x?'https://i.ytimg.com/vi/'+x[1]+'/hqdefault.jpg':'';};
 const findIn=(arr,id)=>arr.find(x=>x.id===id)||null;
 const hue=s=>{let h=0;s=String(s);for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%360;};
 const grad=s=>{const h=hue(s);return `linear-gradient(160deg,hsl(${h} 55% 36%),hsl(${(h+50)%360} 60% 16%))`;};
@@ -2059,7 +2060,7 @@ const SAVE={
     if(!title)return '請輸入標題。';
     const r=normUrl(v.url);if(r.err)return r.err;
     const rec={title,url:r.url,cat:v.cat,date:String(v.date||'').trim(),who:v.who||'',thumb:v.thumb||'',tags:m.tags.slice(),tr:cleanTr(m.tr)};
-    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();data.items.unshift(rec);}
+    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);data.items.unshift(rec);}
   },
   brand(){
     const v=m.v,title=String(v.title||'').trim();
@@ -2083,7 +2084,7 @@ const SAVE={
     const br=m.subId?(brRoot.subBrands||[]).find(x=>x.id===m.subId):brRoot;
     if(!br)return '找不到對應的品牌或子分類。';
     br.campaigns=br.campaigns||[];
-    if(m.id){Object.assign(br.campaigns.find(x=>x.id===m.id),rec);}else{rec.id=uid();br.campaigns.unshift(rec);}
+    if(m.id){Object.assign(br.campaigns.find(x=>x.id===m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);br.campaigns.unshift(rec);}
   },
   live(){
     const v=m.v,title=String(v.title||'').trim();
@@ -2091,7 +2092,7 @@ const SAVE={
     let url='';if(String(v.url||'').trim()){const r=normUrl(v.url);if(r.err)return r.err;url=r.url;}
     let tags=m.tags.slice();if(!tags.includes('直播'))tags.push('直播');
     const rec={title,url,cat:'節目',date:String(v.date||'').trim(),who:'',thumb:v.thumb||'',synopsis:String(v.synopsis||'').trim(),highlights:String(v.highlights||'').trim(),tags,tr:cleanTr(m.tr)};
-    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();data.items.unshift(rec);}
+    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);data.items.unshift(rec);}
   },
   interview(){
     const v=m.v,title=String(v.title||'').trim();
@@ -2102,7 +2103,7 @@ const SAVE={
     const qa=m.qa.map(x=>x.s!==undefined?{id:x.id,s:x.s,t:clean(x.t)}:(x.n!==undefined?{id:x.id,n:clean(x.n),cap:!!x.cap}:{id:x.id,q:clean(x.q),a:clean(x.a)})).filter(x=>x.s!==undefined?Object.keys(x.t).length:(x.n!==undefined?Object.keys(x.n).length:(Object.keys(x.q).length||Object.keys(x.a).length)));
     const speakers=m.speakers.map(sp=>({id:sp.id,mark:String(sp.mark||'').trim(),n:clean(sp.n)})).filter(sp=>sp.mark||Object.keys(sp.n).length);
     const rec={title,url,cat:'訪談',date:String(v.date||'').trim(),thumb:v.thumb||'',tags:m.tags.slice(),tr:cleanTr(m.tr),qa,speakers};
-    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();rec.who='';data.items.unshift(rec);}
+    if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);rec.who='';data.items.unshift(rec);}
   },
   wall(){data.wall=m.wall.slice();},
   board(){
@@ -2162,7 +2163,7 @@ const SAVE={
     const w=findIn(data.works,m.workId);if(!w)return '找不到這個作品。';
     const v=m.v,r=normUrl(v.url);if(r.err)return r.err;
     const rec={kind:v.kind,title:String(v.title||'').trim()||hostLabel(hostOf(r.url)),url:r.url,thumb:v.thumb||'',tr:cleanTr(m.tr)};
-    if(m.id){Object.assign(findIn(w.videos,m.id),rec);}else{rec.id=uid();w.videos.push(rec);}
+    if(m.id){Object.assign(findIn(w.videos,m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);w.videos.push(rec);}
     ui.tab=rec.kind;
   },
   award(){
@@ -2177,7 +2178,7 @@ const SAVE={
     const a=findIn(data.awards,m.workId);if(!a)return '找不到這個獎項。';
     const v=m.v,r=normUrl(v.url);if(r.err)return r.err;
     const rec={title:String(v.title||'').trim()||hostLabel(hostOf(r.url)),url:r.url,thumb:v.thumb||'',tr:cleanTr(m.tr)};
-    if(m.id){Object.assign(findIn(a.videos,m.id),rec);}else{rec.id=uid();a.videos.push(rec);}
+    if(m.id){Object.assign(findIn(a.videos,m.id),rec);}else{rec.id=uid();if(!rec.thumb)rec.thumb=ytThumb(rec.url);a.videos.push(rec);}
   },
   place(){
     const v=m.v,name=String(v.name||'').trim();
