@@ -353,6 +353,8 @@ button.ttl{width:100%;padding:0;border:0;background:none;text-align:left;font:in
 .itop{padding:14px 0 0;color:var(--muted);font-size:13px;letter-spacing:.02em}
 .itop:empty{display:none}
 #pagenote{padding:2px 0 8px}
+.mapcredit{font-size:12px;color:var(--muted);letter-spacing:.02em;opacity:.85}
+.mapcredit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .qalist{display:flex;flex-direction:column;gap:18px;max-width:56em;padding:12px 0 24px;font-size:15px}
 .qatools{display:flex;justify-content:flex-end}
 .qaitem{display:flex;flex-direction:column;gap:14px;margin:12px 0}
@@ -604,7 +606,7 @@ const I18N={
   '編輯':'Edit','完成編輯':'Done',
   '待儲存…':'Unsaved changes…','儲存中…':'Saving…','已儲存':'Saved',
   '儲存失敗，請稍後再試':'Save failed. Try again later.','儲存失敗：內容太大，請減少圖片':'Save failed: too large. Use fewer images.','儲存太頻繁，稍後自動重試':'Saving too often. Retrying shortly.',
-  '搜尋結果':'Search results','包含所有分頁':'Across all pages',
+  '搜尋結果':'Search results','包含所有分頁':'Across all pages','僅限此分頁：{p}':'This page only: {p}','這個分頁找不到符合的內容。':'Nothing found on this page.',
   '{n} 部作品':p=>p.n+(p.n===1?' work':' works'),
   '{n} 個獎項':p=>p.n+(p.n===1?' award':' awards'),
   '{n} 個地點':p=>p.n+(p.n===1?' location':' locations'),
@@ -672,6 +674,7 @@ const I18N={
   '給金泰梨說一句話':'Say something to Kim Tae-ri','用 Email 寄出審核':'Send by email for review','想說的話':'Your message','最多 60 字。會先寄給站長審核，通過後才會出現在彈幕牆上。':'Up to 60 characters. It is sent to the site owner first and only appears on the wall after approval.','請先寫下想說的話。':'Please write your message first.','最多 60 字。':'Up to 60 characters.','站長還沒有設定 Email，先複製這段話，再從「聯絡我們」傳給站長。':'The owner has not set an email yet. Copy your message and send it through “Contact us”.',
   '復原已撤下的地點（{n}）':'Restore hidden places ({n})',
   '頁面最底部小字':'Small line at the very bottom of every page',
+  '其中《二十五，二十一》、《惡鬼》、《正年》的拍攝地點資料由 {src} 提供。':'Filming locations for Twenty-Five Twenty-One, Revenant and Jeongnyeon: The Star Is Born are provided by {src}.',
   '感言原文（選填）':'Original text of the speech (optional)','編輯輪播照片':'Edit slideshow photos','輪播照片':'Slideshow photos','會自動裁成直式並縮小。主頁會像精選作品一樣輪播顯示（至少 2 張）。':'Cropped to portrait and resized automatically. The home page shows them as a slideshow, like the featured works (at least 2 photos).',
   '對話人物（選填，訪談是對話形式時才需要）':'People in the conversation (optional, for conversation-style interviews)','標記':'Mark','原文名':'Original name','新增人物':'Add person','新增對話':'Add conversation turn','對話':'Conversation','說話的人':'Speaker',
   'MV 連結（選填）':'Music video link (optional)','觀看 MV':'Watch MV',
@@ -752,7 +755,9 @@ const ytThumb=u=>{const x=String(u||'').match(/(?:youtube\.com\/(?:watch\?(?:.*&
 const findIn=(arr,id)=>arr.find(x=>x.id===id)||null;
 const hue=s=>{let h=0;s=String(s);for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%360;};
 const grad=s=>{const h=hue(s);return `linear-gradient(160deg,hsl(${h} 55% 36%),hsl(${(h+50)%360} 60% 16%))`;};
-const normTag=s=>String(s).replace(/^#+/,'').trim().slice(0,24);
+/* 標籤別名：輸入左邊的字，會自動存成右邊的標籤 */
+const TAG_ALIAS={'2521':'二十五，二十一'};
+const normTag=s=>{const t=String(s).replace(/^#+/,'').trim().slice(0,24);return TAG_ALIAS[t]||t;};
 const splitTags=s=>String(s).split(/[,，、]/).map(normTag).filter(Boolean);
 const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}};
 function hostLabel(h){
@@ -877,13 +882,13 @@ const wname=s=>{const w=data.works.find(x=>x.title===s);return w?L(w,'title'):s;
 
 const validDetail=(cat,id)=>!!id&&((cat==='作品'&&(!!findIn(data.works,id)||!!findIn(data.songs,id)))||(cat==='獎項'&&!!(findIn(data.awards,id)||{}).id&&findIn(data.awards,id).result==='得獎')||(cat==='訪談'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='訪談')||(cat==='節目'&&isLive(findIn(data.items,id)||{}))||(cat==='周邊'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='周邊')||(cat==='廣告代言'&&!!(findIn(data.items,id)||{}).id&&findIn(data.items,id).cat==='廣告代言'));
 const UIKEY='actor-hub-ui';
-const ui={cat:'主頁',work:'',tab:'正片',tag:'',sub:'',subBrand:'',who:'',orig:true,sorts:{'節目':'old','訪談':'new'},q:'',edit:false};
+const ui={cat:'主頁',work:'',tab:'正片',tag:'',sub:'',fty:'',subBrand:'',who:'',orig:true,sorts:{'節目':'old','訪談':'new'},q:'',edit:false};
 try{
   const su=JSON.parse(sessionStorage.getItem(UIKEY)||'null');
   if(su&&typeof su==='object'){
     if(su.cat==='綜藝')su.cat='節目';
     if(PAGES.some(p=>p.k===su.cat))ui.cat=su.cat;
-    ui.work=su.work||'';ui.tab=TABS.concat(['感言','得獎照片','影片連結']).includes(su.tab)?su.tab:'正片';ui.tag=su.tag||'';ui.sub=su.sub||'';ui.subBrand=su.subBrand||'';ui.who=su.who||'';ui.orig=su.orig!==false;if(su.sorts&&typeof su.sorts==='object')ui.sorts=Object.assign(ui.sorts,su.sorts);ui.q=su.q||'';ui.edit=!!su.edit;
+    ui.work=su.work||'';ui.tab=TABS.concat(['感言','得獎照片','影片連結']).includes(su.tab)?su.tab:'正片';ui.tag=su.tag||'';ui.sub=su.sub||'';ui.fty=su.fty||'';ui.subBrand=su.subBrand||'';ui.who=su.who||'';ui.orig=su.orig!==false;if(su.sorts&&typeof su.sorts==='object')ui.sorts=Object.assign(ui.sorts,su.sorts);ui.q=su.q||'';ui.edit=!!su.edit;
   }
 }catch(e){}
 if(!validDetail(ui.cat,ui.work))ui.work='';
@@ -980,7 +985,9 @@ function renderStatic(){
   $('guide').setAttribute('aria-label',T('分頁'));
   $('chipbar').setAttribute('aria-label',T('篩選'));
 }
-function renderPageNote(){$('pagenote').textContent=(ui.cat==='訪談'&&!currentInterview()&&!ui.q.trim())?T('人總是在改變，不要用片段的文字定義一個人。'):'';}
+function renderPageNote(){
+  if(ui.cat==='拍攝地圖'&&!ui.q.trim()){$('pagenote').innerHTML=`<span class="mapcredit">${esc(T('其中《二十五，二十一》、《惡鬼》、《正年》的拍攝地點資料由 {src} 提供。')).replace('{src}','<a href="https://kdramamap.com/" target="_blank" rel="noopener">KDrama Map</a>')}</span>`;return;}
+  $('pagenote').textContent=(ui.cat==='訪談'&&!currentInterview()&&!ui.q.trim())?T('人總是在改變，不要用片段的文字定義一個人。'):'';}
 function renderBrand(){$('brand').textContent=siteName();document.title=(ui.cat==='主頁'?'':T(ui.cat)+' - ')+siteName();}
 function renderNav(){$('shell').classList.toggle('mini',mini);$('ham').setAttribute('aria-expanded',mini?'false':'true');}
 function langSwitch(){
@@ -1022,7 +1029,7 @@ function currentLive(){const x=ui.cat==='節目'&&ui.work?findIn(data.items,ui.w
 function currentAward(){return ui.cat==='獎項'&&ui.work?findIn(data.awards,ui.work):null;}
 function renderPagehead(){
   let h='';
-  if(ui.q.trim())h=`<h2>${esc(T('搜尋結果'))}</h2><span>${esc(T('包含所有分頁'))}</span>`;
+  if(ui.q.trim())h=`<h2>${esc(T('搜尋結果'))}</h2><span>${esc(ui.cat==='主頁'?T('包含所有分頁'):T('僅限此分頁：{p}',{p:T(ui.cat)}))}</span>`;
   else if(ui.cat==='主頁'||currentWork()||currentSong()||currentAward()||currentInterview())h='';
   else{
     const key={作品:'{n} 部作品',獎項:'{n} 個獎項',拍攝地圖:'{n} 個地點',周邊:'{n} 件商品',廣告代言:'{n} 個品牌'}[ui.cat]||'{n} 個連結';
@@ -1089,20 +1096,24 @@ function tagModel(cat){
   if(cat==='作品')MEDIA_TY.forEach(ty=>{if(data.songs.some(x=>songType(x)===ty)||editing())others.push(ty);});
   return (tmCache[cat]={mains,others,kidOf,used});
 }
+const MAG_GROUP='雜誌',FTY_GROUP='刊登類型';
 function renderChips(){
   const el=$('chipbar');
   const show=!ui.q.trim()&&ui.cat!=='主頁'&&!currentWork()&&!currentSong()&&!currentAward()&&!currentInterview();
-  if(!show){el.style.display='none';ui.tag='';ui.sub='';el.innerHTML='';return;}
+  if(!show){el.style.display='none';ui.tag='';ui.sub='';ui.fty='';el.innerHTML='';return;}
   let rows='';
   if(LINKCATS.includes(ui.cat)||ui.cat==='作品'){
     const tm=tagModel(ui.cat);
-    const tops=tm.mains.map(x=>x.name).concat(tm.others);
+    const tops=tm.mains.map(x=>x.name).filter(n=>!(ui.cat==='周邊'&&n===FTY_GROUP)).concat(tm.others);
     if(ui.tag&&!tops.includes(ui.tag))ui.tag='';
     const cur=tm.mains.find(x=>x.name===ui.tag);
     const subs=cur?cur.kids:[];
     if(!ui.tag||!subs.includes(ui.sub))ui.sub='';
     if(tops.length)rows+=`<div class="chiprow"><button class="chip" data-act="tagf" data-tag="" aria-pressed="${ui.tag===''?'true':'false'}">${esc(T('全部'))}</button>${tops.map(tg=>`<button class="chip" data-act="tagf" data-tag="${esc(tg)}" aria-pressed="${ui.tag===tg?'true':'false'}">${esc(tagLabel(tg))}</button>`).join('')}</div>`;
     if(subs.length)rows+=`<div class="chiprow sub"><span class="rowlab">${esc(tagLabel(ui.tag))}</span><button class="chip" data-act="subf" data-sub="" aria-pressed="${ui.sub===''?'true':'false'}">${esc(T('全部'))}</button>${subs.map(tg=>`<button class="chip" data-act="subf" data-sub="${esc(tg)}" aria-pressed="${ui.sub===tg?'true':'false'}">${esc(tagLabel(tg))}</button>`).join('')}</div>`;
+    {const fm=ui.cat==='周邊'&&ui.tag===MAG_GROUP?tm.mains.find(x=>x.name===FTY_GROUP):null,fk=fm?fm.kids:[];
+    if(!fk.includes(ui.fty))ui.fty='';
+    if(fk.length)rows+=`<div class="chiprow sub fty" role="group" aria-label="${esc(tagLabel(FTY_GROUP))}"><span class="rowlab">${esc(tagLabel(FTY_GROUP))}</span><button class="chip" data-act="ftyf" data-fty="" aria-pressed="${ui.fty===''?'true':'false'}">${esc(T('全部'))}</button>${fk.map(tg=>`<button class="chip" data-act="ftyf" data-fty="${esc(tg)}" aria-pressed="${ui.fty===tg?'true':'false'}">${esc(tagLabel(tg))}</button>`).join('')}</div>`;}
     if(ui.cat==='節目')rows+=`<div class="chiprow who" role="group" aria-label="${esc(T('出演形式'))}"><span class="rowlab">${esc(T('出演形式'))}</span>${[['',T('全部')],['單人',T('單人')],['多人',T('多人')]].map(x=>`<button class="chip" data-act="whof" data-w="${x[0]}" aria-pressed="${ui.who===x[0]?'true':'false'}">${esc(x[1])}</button>`).join('')}</div>`;
     if(SORTABLE.includes(ui.cat))rows+=`<div class="chiprow sortrow" role="group" aria-label="${esc(T('排序'))}"><span class="rowlab">${esc(T('排序'))}</span>${[['new',T('由新到舊')],['old',T('由舊到新')]].map(x=>`<button class="chip" data-act="sortf" data-s="${x[0]}" aria-pressed="${(ui.sorts[ui.cat]||'new')===x[0]?'true':'false'}">${esc(x[1])}</button>`).join('')}</div>`;
   }else{
@@ -1540,7 +1551,7 @@ function viewLinks(cat){
       (cs.length?`<div class="grid campaign">${cs.map(c=>campaignCard(c,brand.id,sub?sub.id:'',!!activeUnit.coverId&&c.id===activeUnit.coverId)).join('')}</div>`:`<p class="muted pad">${esc(T('這個品牌還沒有照片或影片。'))}</p>`)+
       (ed?`<div>${addBtn}${editBrandBtn}</div>`:'');
   }
-  let list=data.items.filter(it=>it.cat===cat&&(!ui.tag||(ui.tag==='現在'?!!it.current:matchTag(it,ui.tag)))&&(!ui.sub||it.tags.includes(ui.sub))&&(!(cat==='節目'&&ui.who)||it.who===ui.who));
+  let list=data.items.filter(it=>it.cat===cat&&(!ui.tag||(ui.tag==='現在'?!!it.current:matchTag(it,ui.tag)))&&(!ui.sub||it.tags.includes(ui.sub))&&(!(cat==='周邊'&&ui.fty)||it.tags.includes(ui.fty))&&(!(cat==='節目'&&ui.who)||it.who===ui.who));
 if(cat==='廣告代言'){
     const dated=list.filter(x=>brandStartYear(x)),undated=list.filter(x=>!brandStartYear(x));
     dated.sort((x,y)=>brandStartYear(x)<brandStartYear(y)?-1:(brandStartYear(x)>brandStartYear(y)?1:0));
@@ -1549,7 +1560,7 @@ if(cat==='廣告代言'){
   }else if(SORTABLE.includes(cat))list=sortByDate(list,ui.sorts[cat]||'new');
   const prod=cat==='周邊',iv=cat==='訪談';
   if(!list.length){
-    const filtered=!!(ui.tag||ui.sub||(cat==='節目'&&ui.who));
+    const filtered=!!(ui.tag||ui.sub||(cat==='周邊'&&ui.fty)||(cat==='節目'&&ui.who));
     const msg=filtered?(prod?'這個標籤下沒有商品。':'這個標籤下沒有連結。'):(prod?'還沒有商品。':'{cat}還沒有連結。');
     const act=prod?'newproduct':(iv?'newinterview':'newlink'),lab=prod?'新增商品':(iv?'新增訪談':'新增連結');
     return `<div class="empty"><span>${esc(T(msg,{cat:T(cat)}))}</span>${editing()&&!filtered?`<button class="btn" data-act="${act}">${esc(T(lab))}</button>`:''}</div>`;
@@ -1612,22 +1623,23 @@ function viewMap(){
   `<p class="hint pad">${esc(T('拖曳移動，滾輪或雙指縮放，點圖釘看詳細資料。'))}</p></div><div class="plist" id="plist">${placeRows(list)}</div></div>`;
 }
 function viewSearch(){
-  const q=ui.q.trim().toLowerCase();
-  const has=(...a)=>a.some(s=>String(s==null?'':s).toLowerCase().includes(q));
-  const ws=data.works.filter(w=>has(w.title,w.type,T(w.type),w.year,w.synopsis,w.ratingSource,w.tags.join(' '),w.tags.map(tagLabel).join(' '),w.fields.map(f=>f[0]+f[1]).join(' '),trText(w)));
-  const vids=[];data.works.forEach(w=>w.videos.forEach(v=>{if(has(v.title,v.kind,T(v.kind),w.title,trText(v),trText(w)))vids.push([w,v]);}));
-  const its=data.items.filter(it=>has(it.title,it.tags.join(' '),it.tags.map(tagLabel).join(' '),it.url,it.cat,T(it.cat),it.price,trText(it),qaBlob(it)));
-  const aws=data.awards.filter(a=>has(a.award,a.edition,a.category,a.work,a.year,a.result,T(a.result),a.note,a.speech,a.speechOrig,trText(a)));
-  const pls=data.places.filter(p=>has(p.name,p.work,p.address,p.note,trText(p)));
-  const sgs=data.songs.filter(x=>has(x.title,x.artist,x.work,x.year,x.note,trText(x)));
+  const q=ui.q.trim().toLowerCase(),qa=(TAG_ALIAS[ui.q.trim()]||'').toLowerCase();
+  const has=(...a)=>a.some(s=>{const t=String(s==null?'':s).toLowerCase();return t.includes(q)||(!!qa&&t.includes(qa));});
+  const all=ui.cat==='主頁',inPage=c=>all||ui.cat===c;
+  const ws=inPage('作品')?data.works.filter(w=>has(w.title,w.type,T(w.type),w.year,w.synopsis,w.ratingSource,w.tags.join(' '),w.tags.map(tagLabel).join(' '),w.fields.map(f=>f[0]+f[1]).join(' '),trText(w))):[];
+  const vids=[];if(inPage('作品'))data.works.forEach(w=>w.videos.forEach(v=>{if(has(v.title,v.kind,T(v.kind),w.title,trText(v),trText(w)))vids.push([w,v]);}));
+  const its=data.items.filter(it=>inPage(it.cat)&&has(it.title,it.tags.join(' '),it.tags.map(tagLabel).join(' '),it.url,it.cat,T(it.cat),it.price,trText(it),qaBlob(it)));
+  const aws=inPage('獎項')?data.awards.filter(a=>has(a.award,a.edition,a.category,a.work,a.year,a.result,T(a.result),a.note,a.speech,a.speechOrig,trText(a))):[];
+  const pls=inPage('拍攝地圖')?data.places.filter(p=>has(p.name,p.work,p.address,p.note,trText(p))):[];
+  const sgs=inPage('作品')?data.songs.filter(x=>has(x.title,x.artist,x.work,x.year,x.note,trText(x))):[];
   let h='';
   if(ws.length)h+=`<h3 class="rowh">${esc(T('作品'))}</h3><div class="row">${ws.map(posterHtml).join('')}</div>`;
   if(vids.length)h+=`<h3 class="rowh">${esc(T('作品裡的影片'))}</h3><div class="vlist">${vids.map((x,i)=>vrowHtml(x[1],i,x[0],true)).join('')}</div>`;
-  if(its.length)h+=`<h3 class="rowh">${esc(T('訪談、節目與周邊'))}</h3><div class="grid">${its.map(cardHtml).join('')}</div>`;
+  ['訪談','節目','周邊','廣告代言'].forEach(c=>{const g=its.filter(it=>it.cat===c);if(g.length)h+=`<h3 class="rowh">${esc(T(c))}</h3><div class="grid">${g.map(cardHtml).join('')}</div>`;});
   if(aws.length)h+=`<h3 class="rowh">${esc(T('獎項'))}</h3>${aws.map(awardRow).join('')}`;
   if(sgs.length)h+=`<h3 class="rowh">${esc(T('歌曲'))}</h3><div class="row songs">${sgs.map(songCard).join('')}</div>`;
   if(pls.length)h+=`<h3 class="rowh">${esc(T('拍攝地點'))}</h3><div class="plist">${placeRows(pls)}</div>`;
-  return h||`<div class="empty"><span>${esc(T('所有分頁都找不到符合的內容。'))}</span></div>`;
+  return h||`<div class="empty"><span>${esc(T(all?'所有分頁都找不到符合的內容。':'這個分頁找不到符合的內容。'))}</span></div>`;
 }
 function renderView(){
   let h;
@@ -2293,7 +2305,7 @@ function parseHash(){
 }
 function showPage(cat,work){
   const changed=(work||'')!==ui.work||cat!==ui.cat;
-  ui.cat=cat;ui.work=work||'';ui.tag='';ui.sub='';ui.subBrand='';ui.who='';ui.q='';$('q').value='';
+  ui.cat=cat;ui.work=work||'';ui.tag='';ui.sub='';ui.fty='';ui.subBrand='';ui.who='';ui.q='';$('q').value='';
   if(!validDetail(ui.cat,ui.work))ui.work='';
   if(changed)ui.tab='正片';
   mv=null;selPlace='';moreOpen=false;lb=null;confirmStill='';heroIdx=0;
@@ -2351,14 +2363,16 @@ document.addEventListener('click',ev=>{
     case 'tab':ui.tab=b.getAttribute('data-k');saveUi();renderEditbar();renderView();break;
     case 'tagf':{
       const tg=b.getAttribute('data-tag'),gr=b.getAttribute('data-group');
-      if(gr){if(ui.tag===gr&&ui.sub===tg){ui.tag='';ui.sub='';}else{ui.tag=gr;ui.sub=tg;}}
-      else{ui.tag=(ui.tag===tg)?'':tg;ui.sub='';}
+      if(gr&&ui.cat==='周邊'&&gr===FTY_GROUP){if(ui.tag===MAG_GROUP&&ui.fty===tg&&!ui.sub){ui.tag='';ui.fty='';}else{ui.tag=MAG_GROUP;ui.sub='';ui.fty=tg;}}
+      else if(gr){if(ui.tag===gr&&ui.sub===tg){ui.tag='';ui.sub='';}else{ui.tag=gr;ui.sub=tg;}ui.fty='';}
+      else{ui.tag=(ui.tag===tg)?'':tg;ui.sub='';ui.fty='';}
       mv=null;saveUi();renderChips();renderView();
       if(!b.classList.contains('chip'))window.scrollTo(0,0);
       break;
     }
     case 'sortf':ui.sorts[ui.cat]=b.getAttribute('data-s');saveUi();renderChips();renderView();break;
     case 'subf':{const sv=b.getAttribute('data-sub');ui.sub=(sv&&sv===ui.sub)?'':sv;saveUi();renderChips();renderView();break;}
+    case 'ftyf':{const fv=b.getAttribute('data-fty');ui.fty=(fv&&fv===ui.fty)?'':fv;saveUi();renderChips();renderView();break;}
     case 'whof':ui.who=b.getAttribute('data-w')||'';saveUi();renderChips();renderView();break;
     case 'toggleEdit':ui.edit=!ui.edit;saveUi();renderActs();renderEditbar();renderView();break;
     case 'newlink':openModal('link');break;
