@@ -1251,7 +1251,7 @@ function prodSwipe(it,title){
 }
 function productHtml(it){
   const ed=editing(),title=L(it,'title'),imgs=prodImgs(it);
-  const pic=it.image?`<span class="pic" style="background-image:url(${esc(it.image)})" role="img" aria-label="${esc(title)}"></span>`:`<span class="ph">${icon(PAGES[6].i,32)}<span>${esc(hostLabel(hostOf(it.url)))}</span></span>`;
+  const pic=it.image?`<span class="pic" style="background-image:url(${esc(it.image)})" role="img" aria-label="${esc(title)}"></span>`:`<span class="ph">${icon(PAGES[6].i,32)}${it.url?`<span>${esc(hostLabel(hostOf(it.url)))}</span>`:''}</span>`;
   return `<article class="card prod">${imgs.length>1?prodSwipe(it,title):`<button class="pimg" data-act="openproduct" data-id="${esc(it.id)}" aria-label="${esc(title)}">${pic}</button>`}`+
     (it.price?`<div class="price">${esc(it.price)}</div>`:'')+
     `<button class="ttl" data-act="openproduct" data-id="${esc(it.id)}">${esc(title)}</button>`+
