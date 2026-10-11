@@ -112,6 +112,38 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pic{display:block;width:90%;height:90%;background-size:contain;background-repeat:no-repeat;background-position:center}
 .pimg .ph{display:flex;flex-direction:column;align-items:center;gap:6px}
 .price{font-size:21px;font-weight:700;line-height:1.2}
+/* product photo set: collage on the card, swipe gallery on the detail page */
+.pimg.multi{position:relative;display:block;cursor:default}
+.pctrack{display:flex;width:100%;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.pctrack::-webkit-scrollbar{display:none}
+.pcs{flex:0 0 100%;height:100%;display:grid;place-items:center;padding:0;border:0;background:none;scroll-snap-align:start;cursor:pointer}
+.pcdots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:5px;pointer-events:none}
+.pcdot{width:6px;height:6px;border-radius:3px;background:var(--ink);opacity:.25;transition:width .2s,opacity .2s}
+.pcdot.on{width:16px;opacity:.7}
+.pcnav{position:absolute;top:50%;width:30px;height:30px;transform:translateY(-50%);border:0;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:1;opacity:0;transition:opacity .2s}
+.pcnav.prev{left:6px}
+.pcnav.next{right:6px}
+.pimg.multi:hover .pcnav,.pcnav:focus-visible{opacity:1}
+@media (hover:none){.pcnav{display:none}}
+.pgal{position:relative;flex:none;width:340px;display:flex;flex-direction:column;gap:8px}
+.pgmain{position:relative}
+.pgtrack{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;border-radius:8px;background:var(--surface);box-shadow:0 6px 24px rgba(0,0,0,.5);scrollbar-width:none;overscroll-behavior-x:contain}
+.pgtrack::-webkit-scrollbar{display:none}
+.pgs{flex:0 0 100%;aspect-ratio:1;padding:0;border:0;scroll-snap-align:start;background-color:transparent;background-size:contain;background-repeat:no-repeat;background-position:center;cursor:zoom-in}
+.pgcount{position:absolute;right:10px;bottom:10px;padding:3px 9px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12.5px;pointer-events:none}
+.pgnav{position:absolute;top:50%;width:36px;height:36px;transform:translateY(-50%);border:0;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:24px;line-height:1;opacity:0;transition:opacity .2s}
+.pgnav.prev{left:8px}
+.pgnav.next{right:8px}
+.pgmain:hover .pgnav,.pgnav:focus-visible{opacity:1}
+@media (hover:none){.pgnav{display:none}}
+.pgthumbs{position:relative;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.pgthumbs::-webkit-scrollbar{display:none}
+.pgt{flex:0 0 54px;aspect-ratio:1;padding:0;border:2px solid transparent;border-radius:6px;background-color:var(--surface);background-size:cover;background-position:center;opacity:.6}
+.pgt[aria-current="true"]{border-color:var(--ink);opacity:1}
+.wtile.sq{aspect-ratio:1;background-size:contain;background-repeat:no-repeat}
+.wtile .wcov{position:absolute;left:4px;bottom:4px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px}
+.wtile .mini.wmv{top:4px;left:4px;right:auto}
+@media (max-width:860px){.pgal{width:100%;max-width:420px}}
 
 /* rows (posters and cards scrolling sideways) */
 .rowh{margin:24px 0 10px;font-size:20px;font-weight:700}
@@ -607,7 +639,7 @@ const I18N={
   '25.03, 121.56 或貼上 Google 地圖網址':'25.03, 121.56 or paste a Google Maps URL',
   'Google 地圖縮短網址（maps.app.goo.gl）不含座標，請改貼完整網址。':'Short Google Maps links (maps.app.goo.gl) contain no coordinates. Paste the full URL instead.',
   '自訂連結（選填，預設用 Google 地圖）':'Custom link (optional, defaults to Google Maps)',
-  '購買或商品連結':'Purchase or product link','價格（選填）':'Price (optional)','例如 NT$ 990':'e.g. NT$ 990','商品圖片':'Product image','商品名稱':'Product name','會自動縮小，不會裁切。':'Resized automatically, not cropped.',
+  '購買或商品連結':'Purchase or product link','價格（選填）':'Price (optional)','例如 NT$ 990':'e.g. NT$ 990','商品圖片':'Product image','封面':'Cover','往前移':'Move earlier','可以一次選多張，會自動縮小，不會裁切。第一張是封面，按 ‹ 可以往前移。外面的卡片和點進去的商品頁都可以左右滑動換張，不會自動播放。':'You can pick several at once. Resized automatically, not cropped. The first one is the cover; tap ‹ to move a photo earlier. On the card and the product page, swipe left or right to change photos; they never play automatically.','商品名稱':'Product name','會自動縮小，不會裁切。':'Resized automatically, not cropped.',
   '照片':'Photo','會自動裁成正方形並縮小。':'Cropped to a square and resized automatically.','姓名':'Name','一句話介紹':'Tagline','簡介':'Bio',
   '每行一項，格式「欄位：內容」，例如「出生：1990 年」。':'One item per line as "Label: value", e.g. "Born: 1990".',
   '官方連結':'Official links','每行一個，格式「名稱：網址」，例如「Instagram：https://…」。':'One per line as "Name: URL", e.g. "Instagram: https://…".',
@@ -1137,10 +1169,18 @@ function tagsHtml(it,ed){
   const taginp=ed?`<input class="taginp" data-id="${esc(it.id)}" placeholder="${esc(T('＋ 新增標籤'))}" maxlength="24" aria-label="${esc(T('新增標籤'))}">`:'';
   return (tags||ed)?`<div class="tags">${tags}${taginp}</div>`:'';
 }
+const MAX_PROD=12;
+const prodImgs=it=>(Array.isArray(it.images)&&it.images.length)?it.images:(it.image?[{id:'p0',src:it.image}]:[]);
+function prodSwipe(it,title){
+  const imgs=prodImgs(it),id=esc(it.id);
+  return `<div class="pimg multi"><div class="pctrack" role="group" aria-roledescription="carousel" aria-label="${esc(title)}">${imgs.map((x,i)=>`<button class="pcs" data-act="openproduct" data-id="${id}" aria-label="${esc(title)} ${i+1}/${imgs.length}"><span class="pic" style="background-image:url(${esc(x.src)})"></span></button>`).join('')}</div>`+
+    `<button class="pcnav prev" data-act="pcprev" aria-label="${esc(T('上一張'))}">‹</button><button class="pcnav next" data-act="pcnext" aria-label="${esc(T('下一張'))}">›</button>`+
+    `<div class="pcdots" aria-hidden="true">${imgs.map((x,i)=>`<span class="pcdot${i===0?' on':''}"></span>`).join('')}</div></div>`;
+}
 function productHtml(it){
-  const ed=editing(),title=L(it,'title');
+  const ed=editing(),title=L(it,'title'),imgs=prodImgs(it);
   const pic=it.image?`<span class="pic" style="background-image:url(${esc(it.image)})" role="img" aria-label="${esc(title)}"></span>`:`<span class="ph">${icon(PAGES[6].i,32)}<span>${esc(hostLabel(hostOf(it.url)))}</span></span>`;
-  return `<article class="card prod"><button class="pimg" data-act="openproduct" data-id="${esc(it.id)}" aria-label="${esc(title)}">${pic}</button>`+
+  return `<article class="card prod">${imgs.length>1?prodSwipe(it,title):`<button class="pimg" data-act="openproduct" data-id="${esc(it.id)}" aria-label="${esc(title)}">${pic}</button>`}`+
     (it.price?`<div class="price">${esc(it.price)}</div>`:'')+
     `<button class="ttl" data-act="openproduct" data-id="${esc(it.id)}">${esc(title)}</button>`+
     tagsHtml(it,ed)+
@@ -1148,8 +1188,11 @@ function productHtml(it){
 }
 function viewProduct(it){
   const ed=editing(),title=L(it,'title'),note=L(it,'note');
-  const bgStyle=it.image?`background-image:url(${esc(it.image)})`:`background:${grad(it.title+it.id)}`;
-  const cover=it.image?`<div class="dposter" style="background-image:url(${esc(it.image)})" role="img" aria-label="${esc(title)}"></div>`:'';
+  const imgs=prodImgs(it),n=imgs.length;
+  const bgStyle=n?`background-image:url(${esc(imgs[0].src)})`:`background:${grad(it.title+it.id)}`;
+  const cover=n===1?`<div class="dposter" style="background-image:url(${esc(it.image||imgs[0].src)})" role="img" aria-label="${esc(title)}"></div>`:n?`<div class="pgal"><div class="pgmain"><div class="pgtrack" role="group" aria-roledescription="carousel" aria-label="${esc(title)}">${imgs.map((x,i)=>`<button class="pgs" data-act="openlb" data-i="${i}" style="background-image:url(${esc(x.src)})" aria-label="${esc(T('商品圖片'))} ${i+1}"></button>`).join('')}</div>`+
+    (n>1?`<button class="pgnav prev" data-act="pgprev" aria-label="${esc(T('上一張'))}">‹</button><button class="pgnav next" data-act="pgnext" aria-label="${esc(T('下一張'))}">›</button><span class="pgcount"><b>1</b> / ${n}</span>`:'')+`</div>`+
+    (n>1?`<div class="pgthumbs">${imgs.map((x,i)=>`<button class="pgt" data-act="pgto" data-i="${i}" aria-current="${i===0?'true':'false'}" style="background-image:url(${esc(x.src)})" aria-label="${esc(T('第 {n} 張',{n:i+1}))}"></button>`).join('')}</div>`:'')+`</div>`:'';
   const meta=[it.date,it.price].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('');
   const tags=it.tags.length?`<div class="tags">${it.tags.map(tg=>`<span class="muted">#${esc(tagLabel(tg))}</span>`).join('')}</div>`:'';
   return `<div class="crumb"><button class="btn sec" data-act="cat" data-c="周邊">${esc(T('← 周邊'))}</button></div>`+
@@ -1609,14 +1652,14 @@ function renderAll(){
 
 function lbList(){
   if(!lb)return [];
-  const o=lb.kind==='award'?findIn(data.awards,lb.id):findIn(data.works,lb.id);
-  return o?(lb.kind==='award'?o.photos:o.stills):[];
+  const o=lb.kind==='award'?findIn(data.awards,lb.id):lb.kind==='product'?findIn(data.items,lb.id):findIn(data.works,lb.id);
+  return o?(lb.kind==='award'?o.photos:lb.kind==='product'?prodImgs(o):o.stills):[];
 }
 function renderLightbox(){
   const el=$('lightbox');
   const list=lbList(),st=list[lb?lb.i:0];
   if(!lb||!st){lb=null;el.innerHTML='';return;}
-  const label=T(lb.kind==='award'?'得獎照片':'劇照');
+  const label=T(lb.kind==='award'?'得獎照片':lb.kind==='product'?'商品圖片':'劇照');
   el.innerHTML=`<div class="lbx" role="dialog" aria-modal="true" aria-label="${esc(label)}"><div class="lbbg" data-act="lbclose"></div><button class="lbclose" data-act="lbclose" aria-label="${esc(T('關閉'))}">×</button>${list.length>1?`<button class="lbnav prev" data-act="lbprev" aria-label="${esc(T('上一張'))}">‹</button><button class="lbnav next" data-act="lbnext" aria-label="${esc(T('下一張'))}">›</button>`:''}<img src="${esc(st.src)}" alt=""><div class="lbcount">${lb.i+1} / ${list.length}</div></div>`;
 }
 function lbStep(d){
@@ -1789,7 +1832,7 @@ function specFor(){
     {k:'title',l:'商品名稱',t:'text',max:120,tr:true},
     {k:'url',l:'購買或商品連結（選填）',t:'text',ph:'https://',mode:'url'},
     {k:'price',l:'價格（選填）',t:'text',ph:'例如 NT$ 990',max:30},
-    {k:'image',l:'商品圖片',t:'img',ratio:0,sq:true,hint:'會自動縮小，不會裁切。'},
+    {t:'prodpics'},
     {k:'note',l:'詳細資訊（選填）',t:'area',rows:5,tr:true},
     {t:'tags'}]};
   if(t==='work')return {title:m.id?'編輯作品':'新增作品',del:!!m.id,rows:[
@@ -1895,6 +1938,11 @@ function lyricsHtml(){
   const block=(x,i)=>`<div class="qab"><div class="qah"><b>${esc(T('第 {n} 段',{n:i+1}))}</b><span class="qbtns"><button class="mini" data-act="qaup" data-id="${esc(x.id)}" aria-label="${esc(T('上移'))}">↑</button><button class="mini" data-act="qadown" data-id="${esc(x.id)}" aria-label="${esc(T('下移'))}">↓</button><button class="mini" data-act="qadel" data-id="${esc(x.id)}">${esc(T('刪除'))}</button></span></div><div class="qcols" style="--qc:${cols.length}">${cols.map(c=>`<label>${esc(c.n)}<textarea data-qa="${esc(x.id)}" data-qk="n" data-ql="${c.k}" rows="3">${esc((x.n||{})[c.k]||'')}</textarea></label>`).join('')}</div></div>`;
   return `<div class="field"><span>${esc(T('歌詞'))}</span><small>${esc(T('請只填寫您有合法授權使用的歌詞內容，可依段落（例如每一段主歌、副歌）分開輸入。'))}</small>${m.qa.map(block).join('')}<button class="btn sec" data-act="qanote">${esc(T('新增歌詞段落'))}</button></div>`;
 }
+function prodPicsHtml(){
+  const list=m.v.images||[];
+  const items=list.map((x,i)=>`<div class="wtile sq" style="background-image:url(${esc(x.src)})">${i===0?`<span class="wcov">${esc(T('封面'))}</span>`:`<button class="mini wmv" data-act="prodmv" data-id="${esc(x.id)}" aria-label="${esc(T('往前移'))}">‹</button>`}<button class="mini" data-act="prodrm" data-id="${esc(x.id)}" aria-label="${esc(T('移除'))}">×</button></div>`).join('');
+  return `<div class="field"><span>${esc(T('商品圖片'))}</span><small>${esc(T('可以一次選多張，會自動縮小，不會裁切。第一張是封面，按 ‹ 可以往前移。外面的卡片和點進去的商品頁都可以左右滑動換張，不會自動播放。'))}</small><div class="wgrid">${items}</div>${list.length<MAX_PROD?`<label class="btn sec fileb">${esc(T('新增照片'))}<input type="file" id="prod-input" accept="image/*" multiple></label>`:''}</div>`;
+}
 function wallEditHtml(){
   const items=m.wall.map(x=>`<div class="wtile" style="background-image:url(${esc(x.src)})"><button class="mini" data-act="wallrm" data-id="${esc(x.id)}" aria-label="${esc(T('移除'))}">×</button></div>`).join('');
   return `<div class="field"><span>${esc(T('輪播照片'))}</span><small>${esc(T('會自動裁成直式並縮小。主頁會像精選作品一樣輪播顯示（至少 2 張）。'))}</small><div class="wgrid">${items}</div>${m.wall.length<MAX_WALL?`<label class="btn sec fileb">${esc(T('新增照片'))}<input type="file" id="wall-input" accept="image/*" multiple></label>`:''}</div>`;
@@ -1923,6 +1971,7 @@ function fieldHtml(f){
   if(f.t==='qa')return qaHtml();
   const other=m.lang!==BASE;
   if(other&&!f.tr)return '';
+  if(f.t==='prodpics')return prodPicsHtml();
   if(f.t==='tags'){
     const used=m.tags,sugg=allTags().filter(tg=>!used.includes(tg)).slice(0,8);
     return `<div class="field" role="group" aria-label="${esc(T('標籤'))}"><span>${esc(T('標籤'))}</span><div class="tagbox">${used.map(tg=>`<span class="tag ed">#${esc(tg)}<button data-act="mrmtag" data-tag="${esc(tg)}" aria-label="${esc(T('移除標籤 {t}',{t:tg}))}">×</button></span>`).join('')}<input id="m-taginp" data-m="tagInput" value="${esc(m.tagInput)}" placeholder="${esc(T('輸入後按 Enter'))}" maxlength="24"></div>${sugg.length?`<div class="sugg"><span>${esc(T('常用標籤'))}</span>${sugg.map(tg=>`<button class="chip" data-act="maddtag" data-tag="${esc(tg)}">${esc(tg)}</button>`).join('')}</div>`:''}</div>`;
@@ -2040,7 +2089,7 @@ function openModal(type,id,extra,subId){
     v=vd?{title:vd.title,url:vd.url,thumb:vd.thumb||''}:{title:'',url:'',thumb:''};tr=clone(vd);
   }else if(type==='product'){
     const it=id?findIn(data.items,id):null;
-    v=it?{title:it.title,url:it.url,price:it.price||'',image:it.image||'',note:it.note||''}:{title:'',url:'',price:'',image:'',note:''};
+    v=it?{title:it.title,url:it.url,price:it.price||'',images:prodImgs(it).map(x=>({id:x.id==='p0'?uid():x.id,src:x.src})),note:it.note||''}:{title:'',url:'',price:'',images:[],note:''};
     tags=it?it.tags.slice():(ui.tag&&ui.cat==='周邊'?[ui.tag]:[]);tr=clone(it);
   }else{
     const p=data.profile;
@@ -2143,7 +2192,8 @@ const SAVE={
     const v=m.v,title=String(v.title||'').trim();
     if(!title)return '請輸入商品名稱。';
     let url='';if(String(v.url||'').trim()){const r=normUrl(v.url);if(r.err)return r.err;url=r.url;}
-    const rec={title,url,cat:'周邊',price:String(v.price||'').trim(),image:v.image||'',note:String(v.note||'').trim(),date:'',tags:m.tags.slice(),tr:cleanTr(m.tr)};
+    const imgs=(v.images||[]).map(x=>({id:x.id,src:x.src}));
+    const rec={title,url,cat:'周邊',price:String(v.price||'').trim(),image:imgs.length===1?imgs[0].src:'',images:imgs.length>1?imgs:[],note:String(v.note||'').trim(),date:'',tags:m.tags.slice(),tr:cleanTr(m.tr)};
     if(m.id){Object.assign(findIn(data.items,m.id),rec);}else{rec.id=uid();data.items.unshift(rec);}
   },
   work(){
@@ -2403,6 +2453,12 @@ case 'ttdel':m.tree.splice(parseInt(b.getAttribute('data-i'),10),1);renderModal(
     case 'newmv':openModal('song',null,'');m.v.type='MV';renderModal();break;
     case 'editsong':openModal('song',id);break;
     case 'wallrm':m.wall=m.wall.filter(x=>x.id!==id);renderModal();break;
+    case 'prodrm':if(m&&m.v.images){m.v.images=m.v.images.filter(x=>x.id!==id);renderModal();}break;
+    case 'prodmv':if(m&&m.v.images){const L2=m.v.images,i=L2.findIndex(x=>x.id===id);if(i>0){const t=L2[i];L2[i]=L2[i-1];L2[i-1]=t;renderModal();}}break;
+    case 'pcprev':case 'pcnext':{const t=b.parentNode.querySelector('.pctrack');if(t)t.scrollBy({left:(act==='pcnext'?1:-1)*t.clientWidth,behavior:'smooth'});break;}
+    case 'pgprev':pgGo(pgIdx()-1);break;
+    case 'pgnext':pgGo(pgIdx()+1);break;
+    case 'pgto':pgGo(parseInt(b.getAttribute('data-i'),10)||0);break;
     case 'hmfx':handmaidenQuotes();break;
     case 'trFx':tariFx();break;
     case 'jhFx':jeongFx();break;
@@ -2427,7 +2483,7 @@ case 'ttdel':m.tree.splice(parseInt(b.getAttribute('data-i'),10),1);renderModal(
     case 'qaup':case 'qadown':{const i=m.qa.findIndex(x=>x.id===id),j=i+(act==='qaup'?-1:1);if(i>=0&&j>=0&&j<m.qa.length){const tmp=m.qa[i];m.qa[i]=m.qa[j];m.qa[j]=tmp;}renderModal();break;}
     case 'addawardvideo':openModal('awardvideo',null,ui.work);break;
     case 'editawardvideo':openModal('awardvideo',id,b.getAttribute('data-a'));break;
-    case 'openlb':lb={kind:ui.cat==='獎項'?'award':'work',id:ui.work,i:parseInt(b.getAttribute('data-i'),10)||0};renderLightbox();break;
+    case 'openlb':lb={kind:ui.cat==='獎項'?'award':ui.cat==='周邊'?'product':'work',id:ui.work,i:parseInt(b.getAttribute('data-i'),10)||0};renderLightbox();break;
     case 'rmphoto':{
       const a=currentAward(),pid=b.getAttribute('data-pid');
       if(confirmStill===pid){if(a)a.photos=a.photos.filter(x=>x.id!==pid);confirmStill='';touch();}
@@ -2495,6 +2551,13 @@ document.addEventListener('change',ev=>{
     const next=()=>{if(i>=files.length){renderModal();return;}loadImage(files[i++],360,3/4,url=>{if(url&&m&&m.type==='wall')m.wall.push({id:uid(),src:url});next();});};
     next();return;
   }
+  if(el.id==='prod-input'&&m&&m.type==='product'){
+    m.v.images=m.v.images||[];
+    const files=[].slice.call(el.files||[]).slice(0,Math.max(0,MAX_PROD-m.v.images.length));el.value='';
+    let i=0;
+    const next=()=>{if(i>=files.length){renderModal();return;}loadImage(files[i++],720,0,url=>{if(url&&m&&m.type==='product')m.v.images.push({id:uid(),src:url});next();});};
+    next();return;
+  }
   if(el.id==='still-input'){const w=currentWork(),files=[].slice.call(el.files||[]);el.value='';addStills(w,files);return;}
   if(el.id==='photo-input'){const a=currentAward(),files=[].slice.call(el.files||[]);el.value='';addImages(a,'photos',files,MAX_STILLS,'照片最多 24 張');return;}
   if(!k||!m||!el.files||!el.files[0])return;
@@ -2511,6 +2574,26 @@ if(window.matchMedia){
   if(mq.addEventListener)mq.addEventListener('change',onMq);else if(mq.addListener)mq.addListener(onMq);
 }
 window.addEventListener('resize',()=>{if(mv&&$('map'))applyView();});
+
+/* ---------- product gallery (swipe) ---------- */
+function pgIdx(){const t=document.querySelector('.pgtrack');return t&&t.clientWidth?Math.round(t.scrollLeft/t.clientWidth):0;}
+function pgGo(i){
+  const t=document.querySelector('.pgtrack');if(!t)return;
+  const n=t.children.length;i=Math.max(0,Math.min(n-1,i));
+  t.scrollTo({left:i*t.clientWidth,behavior:'smooth'});
+}
+function pgSync(t){
+  const i=t.clientWidth?Math.round(t.scrollLeft/t.clientWidth):0,g=t.closest('.pgal');if(!g)return;
+  const c=g.querySelector('.pgcount b');if(c)c.textContent=String(i+1);
+  const th=g.querySelector('.pgthumbs');if(!th)return;
+  [].forEach.call(th.children,(el,k)=>el.setAttribute('aria-current',k===i?'true':'false'));
+  const on=th.children[i];if(on)th.scrollLeft=on.offsetLeft-(th.clientWidth-on.offsetWidth)/2;
+}
+document.addEventListener('scroll',ev=>{
+  const t=ev.target;if(!t||!t.classList)return;
+  if(t.classList.contains('pgtrack'))pgSync(t);
+  else if(t.classList.contains('pctrack')){const i=t.clientWidth?Math.round(t.scrollLeft/t.clientWidth):0,d=t.parentNode.querySelector('.pcdots');if(d)[].forEach.call(d.children,(el,k)=>el.classList.toggle('on',k===i));}
+},true);
 
 /* ---------- confetti (opening a won award) ---------- */
 function confetti(){
