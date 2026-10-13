@@ -170,6 +170,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
 .kv.big{font-size:15px;max-width:40em}
+.kv.spec{margin-top:4px}.kv.spec dd{overflow-wrap:anywhere}.syn.full+.kv.spec{margin-top:14px}
 .links,.stats{display:flex;flex-wrap:wrap;gap:8px}
 .lnk{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:16px;background:var(--surface);color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}
 .lnk.ico{justify-content:center;width:40px;height:40px;padding:0;border-radius:50%}
@@ -658,7 +659,7 @@ const I18N={
   '出演形式':'Appearance','單人':'Solo','多人':'Group','未設定':'Not set',
   '編輯訪談':'Edit interview','新增訪談':'Add interview','原始出處連結（選填）':'Original source link (optional)',
   '頂部圖片':'Top image','訪談頁最上方的圖片，同時也是卡片縮圖。橫式 16:9，會自動裁切並縮小。':'The image at the top of the interview page and the card thumbnail. 16:9 landscape, cropped and resized automatically.',
-  '問答':'Q&A','問題':'Question','回答':'Answer','原文':'Original','新增問題':'Add question','問題 {n}':'Question {n}','上移':'Move up','下移':'Move down','顯示原文':'Show original',
+  '問答':'Q&A','問題':'Question','回答':'Answer','原文':'Original','新增問題':'Add question','問題 {n}':'Question {n}','上移':'Move up','下移':'Move down','顯示原文':'Show original','隱藏原文':'Hide original','搜尋本站':'Search this site','搜尋此分頁：{p}':'Search this page: {p}','尚未收錄感言。':'No acceptance speech recorded yet.',
   '還沒有訪談內容。':'No interview content yet.','人總是在改變，不要用片段的文字定義一個人。':"People are always changing. Don't define a person by fragments of text.",
   '← 訪談':'← Interviews','← 節目':'← Shows','新增子分類':'Add sub-category','編輯這一個子分類':'Edit this sub-category','ZDNet Korea 報導':'ZDNet Korea report','前往原始出處':'Go to the original source',
   '地址':'Address','地圖連結（選填，韓國預設用 Naver、其他用 Google）':'Map link (optional; Naver for Korea, Google elsewhere)','在 Naver 地圖開啟':'Open in Naver Map','開啟地圖連結':'Open map link',
@@ -1018,7 +1019,7 @@ function renderStatic(){
   $('sitefoot').textContent=L(data.about,'footer');
   document.documentElement.lang=langInfo().html;
   $('ham').setAttribute('aria-label',T('收合或展開側欄'));
-  $('q').placeholder=T('搜尋作品、影片、獎項、地點');
+  $('q').placeholder=ui.cat==='主頁'?T('搜尋本站'):T('搜尋此分頁：{p}',{p:T(ui.cat)});
   $('q').setAttribute('aria-label',T('搜尋'));
   $('guide').setAttribute('aria-label',T('分頁'));
   $('chipbar').setAttribute('aria-label',T('篩選'));
@@ -1135,17 +1136,25 @@ function tagModel(cat){
   return (tmCache[cat]={mains,others,kidOf,used});
 }
 const MAG_GROUP='雜誌',FTY_GROUP='刊登類型';
-/* 周邊排序：雜誌依「發行年月」(sortDate，不會顯示在頁面上) 或標題裡的「2021年2月」；其他商品依所屬作品的年份（同作品放一起） */
+/* 周邊排序：依商品／版本自己的發行日期（sortDate → date → 詳細資訊裡的出版／發行日期 → 標題裡的「2021年2月」）；都沒有時才用所屬作品的年份 */
+const RD_LAB=/^\s*(出版日期|出版日|發行日期|發行日|發售日|上市日|出版|發行|上市)\s*[：:]/;
+function relDate(it){
+  const norm=(y,m,d)=>y+(m?'-'+String(m).padStart(2,'0')+(d?'-'+String(d).padStart(2,'0'):''):'');
+  const pick=str=>{const x=String(str||'').match(/((?:19|20)\d{2})(?:\s*[-\/.年]\s*(\d{1,2})(?:\s*[-\/.月]\s*(\d{1,2}))?)?/);return x?norm(x[1],x[2],x[3]):'';};
+  let v=pick(it.sortDate)||pick(it.date);
+  if(v)return v;
+  for(const line of String(it.note||'').split('\n')){if(RD_LAB.test(line)){v=pick(line.replace(RD_LAB,''));if(v)return v;}}
+  const t=String(it.title||'').match(/(\d{4})\s*年\s*(\d{1,2})\s*月/);
+  return t?norm(t[1],t[2]):'';
+}
 function prodIsMag(it){
   if(matchTag(it,MAG_GROUP,'周邊'))return true;
   const fm=treeOf('周邊').find(x=>x.name===FTY_GROUP);
   return !!fm&&mainKids('周邊',fm).some(k=>it.tags.includes(k));
 }
 function prodKey(it){
-  const d=String(it.sortDate||'').trim().match(/^(\d{4})(?:\s*[-\/.年]\s*(\d{1,2}))?/);
-  if(d)return d[1]+'-'+String(d[2]||0).padStart(2,'0')+'|';
-  const t=String(it.title||'').match(/(\d{4})\s*年\s*(\d{1,2})\s*月/);
-  if(t)return t[1]+'-'+t[2].padStart(2,'0')+'|';
+  const rd=relDate(it);
+  if(rd){const p=rd.split('-');return p[0]+'-'+(p[1]||'00')+'-'+(p[2]||'00')+'|';}
   if(!prodIsMag(it)){
     const ws=data.works.filter(w=>it.tags.includes(w.title)&&/^\d{4}$/.test(String(w.year||'')));
     if(ws.length){ws.sort((a,b)=>String(a.year)<String(b.year)?-1:(String(a.year)>String(b.year)?1:0));return ws[0].year+'-00|'+ws[0].title;}
@@ -1255,6 +1264,7 @@ function productHtml(it){
   return `<article class="card prod">${imgs.length>1?prodSwipe(it,title):`<button class="pimg" data-act="openproduct" data-id="${esc(it.id)}" aria-label="${esc(title)}">${pic}</button>`}`+
     (it.price?`<div class="price">${esc(it.price)}</div>`:'')+
     `<button class="ttl" data-act="openproduct" data-id="${esc(it.id)}">${esc(title)}</button>`+
+    (relDate(it)?`<div class="meta"><span>${esc(relDate(it))}</span></div>`:'')+
     tagsHtml(it,ed)+
     (ed?`<div class="tools"><button class="mini" data-act="editproduct" data-id="${esc(it.id)}">${esc(T('編輯商品'))}</button></div>`:'')+`</article>`;
 }
@@ -1269,7 +1279,17 @@ function viewProduct(it){
   const tags=it.tags.length?`<div class="tags">${it.tags.map(tg=>`<span class="muted">#${esc(tagLabel(tg))}</span>`).join('')}</div>`:'';
   return `<div class="crumb"><button class="btn sec" data-act="cat" data-c="周邊">${esc(T('← 周邊'))}</button></div>`+
     `<section class="dhero"><div class="bd" style="${bgStyle}"></div><div class="grad"></div>${cover}<div class="dinfo"><h1>${esc(title)}</h1><div class="meta2">${meta}</div>${tags}<div class="hbtns">${isSafe(it.url)?`<a class="btn" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(T('購買或商品連結'))}</a>`:''}${ed?`<button class="btn sec" data-act="editproduct" data-id="${esc(it.id)}">${esc(T('編輯商品'))}</button>`:''}</div></div></section>`+
-    (note?`<h3 class="rowh">${esc(T('詳細資訊'))}</h3><p class="syn full">${esc(note)}</p>`:`<p class="muted pad">${esc(T('還沒有詳細資訊。'))}</p>`);
+    (note?`<h3 class="rowh">${esc(T('詳細資訊'))}</h3>${specHtml(note)}`:`<p class="muted pad">${esc(T('還沒有詳細資訊。'))}</p>`);
+}
+/* 「作者：…」這類有欄位名稱的行排成兩欄；其他文字照原樣顯示在上方 */
+function specHtml(note){
+  const rows=[],free=[];
+  String(note).split('\n').map(x=>x.trim()).filter(Boolean).forEach(line=>{
+    const m=line.match(/^([^：:]{1,14})[：:]\s*(.+)$/);
+    if(m&&!/^https?$/i.test(m[1].trim()))rows.push([m[1].trim(),m[2].trim()]);else free.push(line);
+  });
+  if(rows.length<2)return `<p class="syn full">${esc(note)}</p>`;
+  return (free.length?`<p class="syn full">${esc(free.join('\n'))}</p>`:'')+`<dl class="kv big spec">${rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`;
 }
 function interviewCard(it){
   const ed=editing(),title=L(it,'title');
@@ -1309,7 +1329,7 @@ function viewInterview(it){
   return `<div class="itop">${esc(T('人總是在改變，不要用片段的文字定義一個人。'))}</div>`+
     `<div class="crumb"><button class="btn sec" data-act="cat" data-c="訪談">${esc(T('← 訪談'))}</button></div>`+
     `<section class="dhero"><div class="bd" style="${bgStyle}"></div><div class="grad"></div>${cover}<div class="dinfo"><h1>${esc(title)}</h1><div class="meta2">${meta}</div>${tags}<div class="hbtns">${isSafe(it.url)?`<a class="btn sec" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(T('前往原始出處'))}</a>`:''}${ed?`<button class="btn sec" data-act="editinterview" data-id="${esc(it.id)}">${esc(T('編輯訪談'))}</button>`:''}</div></div></section>`+
-    (it.qa.length?`<div class="qalist">${hasOrig?`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T('顯示原文'))}</button></div>`:''}${list}</div>`:`<p class="muted pad">${esc(T('還沒有訪談內容。'))}</p>`);
+    (it.qa.length?`<div class="qalist">${hasOrig?`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T(ui.orig?'隱藏原文':'顯示原文'))}</button></div>`:''}${list}</div>`:`<p class="muted pad">${esc(T('還沒有訪談內容。'))}</p>`);
 }
 function isLive(it){return it.cat==='節目'&&it.tags.includes('直播');}
 function liveCard(it){
@@ -1526,7 +1546,7 @@ function lyricsSectionHtml(blocks,ed){
     const orig=ui.orig&&o&&o!==t?`<p class="qorig">${esc(o)}</p>`:'';
     return t||orig?`<div class="lyverse"><p>${esc(t)}</p>${orig}</div>`:'';
   }).join('');
-  return `<h3 class="rowh">${esc(T('歌詞'))}</h3>${blocks.length?`${hasOrig?`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T('顯示原文'))}</button></div>`:''}<div class="lylist">${lines}</div>`:`<p class="muted pad">${esc(T('還沒有歌詞。'))}</p>`}`;
+  return `<h3 class="rowh">${esc(T('歌詞'))}</h3>${blocks.length?`${hasOrig?`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T(ui.orig?'隱藏原文':'顯示原文'))}</button></div>`:''}<div class="lylist">${lines}</div>`:`<p class="muted pad">${esc(T('還沒有歌詞。'))}</p>`}`;
 }
 function viewWorks(){
   if(!data.works.length&&!data.songs.length)return `<div class="empty"><span>${esc(T('還沒有作品。'))}</span>${editing()?`<button class="btn" data-act="newwork">${esc(T('新增作品'))}</button>`:''}</div>`;
@@ -1602,7 +1622,7 @@ function viewLinks(cat){
     }
     const activeUnit=sub||brand;
     const cs=(activeUnit.campaigns||[]).slice().sort((x,y)=>String(y.date||'').localeCompare(String(x.date||'')));
-    const pinIdx=activeUnit.coverId?cs.findIndex(c=>c.id===activeUnit.coverId):-1;if(pinIdx>0)cs.unshift(cs.splice(pinIdx,1)[0]);
+    if((ui.sorts['廣告代言']||'new')==='old')cs.reverse();
     const backAct=sub?`<button class="btn sec" data-act="opensub" data-w="${esc(brand.id)}" data-s="">${esc(T('← {title}',{title:L(brand,'title')}))}</button>`:`<button class="btn sec" data-act="cat" data-c="廣告代言">${esc(T('← 廣告代言'))}</button>`;
     const editBrandBtn=sub?`<button class="btn sec" data-act="editsubbrand" data-w="${esc(brand.id)}" data-s="${esc(sub.id)}">${esc(T('編輯這一個子分類'))}</button>`:`<button class="btn sec" data-act="editbrand" data-id="${esc(brand.id)}">${esc(T('編輯品牌'))}</button>`;
     const addBtn=sub?`<button class="btn" data-act="newcampaign" data-b="${esc(brand.id)}" data-s="${esc(sub.id)}">${esc(T('新增這個品牌的照片／影片'))}</button>`:`<button class="btn" data-act="newcampaign" data-b="${esc(brand.id)}">${esc(T('新增這個品牌的照片／影片'))}</button>`;
@@ -1654,10 +1674,10 @@ function viewAward(a){
   const so=String(a.speechOrig||'').trim();
   if(tab==='感言'){
     let sp='';
-    if(so)sp+=`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T('顯示原文'))}</button></div>`;
+    if(so)sp+=`<div class="qatools"><button class="chip" data-act="orig" aria-pressed="${ui.orig?'true':'false'}">${esc(T(ui.orig?'隱藏原文':'顯示原文'))}</button></div>`;
     if(speech)sp+=`<p class="speech">${esc(speech)}</p>`;
     if(so&&(ui.orig||!speech)&&so!==speech)sp+=`<p class="speech qorig">${esc(so)}</p>`;
-    pane=(sp||`<p class="muted pad">${esc(T('還沒有感言。'))}</p>`)+(ed?`<div>${editBtn}</div>`:'');
+    pane=(sp||`<p class="muted pad">${esc(T('尚未收錄感言。'))}</p>`)+(ed?`<div>${editBtn}</div>`:'');
   }
   else if(tab==='得獎照片')pane=photosHtml(a,ed);
   else pane=`<div class="vlist">${a.videos.length?a.videos.map((v,k)=>avrowHtml(v,k,a)).join(''):`<p class="muted pad">${esc(T('還沒有影片連結。'))}</p>`}</div>`+(ed?`<button class="btn" data-act="addawardvideo">${esc(T('新增影片連結'))}</button>`:'');
@@ -2366,13 +2386,20 @@ function parseHash(){
   if(!PAGES.some(p=>p.k===parts[0]))return null;
   return {cat:parts[0],work:parts[1]||''};
 }
+/* 從列表點進詳細頁時記住篩選和捲動位置；按「← 返回」或瀏覽器上一頁回到同一個列表時還原 */
+const listMem={};
 function showPage(cat,work){
   const changed=(work||'')!==ui.work||cat!==ui.cat;
+  const prevCat=ui.cat,prevWork=ui.work;
+  if(!prevWork&&!ui.q.trim())listMem[prevCat]={tag:ui.tag,sub:ui.sub,fty:ui.fty,who:ui.who,y:window.scrollY||0};
   ui.cat=cat;ui.work=work||'';ui.tag='';ui.sub='';ui.fty='';ui.subBrand='';ui.who='';ui.q='';$('q').value='';
   if(!validDetail(ui.cat,ui.work))ui.work='';
+  const back=!ui.work&&cat===prevCat&&!!prevWork&&listMem[cat];
+  if(back){ui.tag=back.tag;ui.sub=back.sub;ui.fty=back.fty;ui.who=back.who;}
   if(changed)ui.tab='正片';
   mv=null;selPlace='';moreOpen=false;lb=null;confirmStill='';heroIdx=0;
-  saveUi();renderAll();window.scrollTo(0,0);
+  saveUi();renderAll();
+  if(back){window.scrollTo(0,back.y);requestAnimationFrame(()=>window.scrollTo(0,back.y));}else window.scrollTo(0,0);
   const wa=currentAward();if(wa&&wa.result==='得獎')confetti();
   const w2=currentWork();
   if(w2&&w2.title==='惡鬼'&&lastWaterFxId!==w2.id){
