@@ -680,7 +680,7 @@ const I18N={
   '感言原文（選填）':'Original text of the speech (optional)','編輯輪播照片':'Edit slideshow photos','輪播照片':'Slideshow photos','會自動裁成直式並縮小。主頁會像精選作品一樣輪播顯示（至少 2 張）。':'Cropped to portrait and resized automatically. The home page shows them as a slideshow, like the featured works (at least 2 photos).',
   '對話人物（選填，訪談是對話形式時才需要）':'People in the conversation (optional, for conversation-style interviews)','標記':'Mark','原文名':'Original name','新增人物':'Add person','新增對話':'Add conversation turn','對話':'Conversation','說話的人':'Speaker',
   'MV 連結（選填）':'Music video link (optional)','觀看 MV':'Watch MV',
-  'MV':'MV','還沒有MV。':'No MVs yet.','新增MV':'Add MV','直播':'Live','編輯直播':'Edit livestream','新增直播':'Add livestream','日期（選填）':'Date (optional)','連結（選填）':'Link (optional)','簡介':'Synopsis','佳句（選填，每行一句）':'Highlights (optional, one per line)','佳句':'Highlights','還沒有簡介。':'No synopsis yet.','還沒有佳句。':'No highlights yet.','前往連結':'Open link','← 周邊':'← Merch','購買或商品連結':'Buy / product link','詳細資訊':'Details','還沒有詳細資訊。':'No details yet.','分享':'Share','下載圖片':'Download image','圖片製作中…':'Generating image…','圖片製作失敗，請再試一次。':'Could not generate the image. Please try again.','儲存中…':'Saving…','電腦按右鍵選擇「另存圖片」；手機長按圖片即可儲存。':'On a computer, right-click the image and choose "Save image"; on a phone, press and hold the image to save it.','請自行截圖保存。':'Please take a screenshot to save it.',
+  'MV':'MV','還沒有MV。':'No MVs yet.','新增MV':'Add MV','直播':'Live','編輯直播':'Edit livestream','新增直播':'Add livestream','日期（選填）':'Date (optional)','連結（選填）':'Link (optional)','簡介':'Synopsis','佳句（選填，每行一句）':'Highlights (optional, one per line)','佳句':'Highlights','還沒有簡介。':'No synopsis yet.','還沒有佳句。':'No highlights yet.','前往連結':'Open link','← 周邊':'← Merch','購買或商品連結':'Buy / product link','詳細資訊':'Details','還沒有詳細資訊。':'No details yet.','分享':'Share','下載圖片':'Download image','圖片製作中…':'Generating image…','圖片製作失敗，請再試一次。':'Could not generate the image. Please try again.','儲存中…':'Saving…','電腦按右鍵選擇「另存圖片」；手機長按圖片即可儲存。':'On a computer, right-click the image and choose "Save image"; on a phone, press and hold the image to save it.','請自行截圖保存。':'Please take a screenshot to save it.','長按或按右鍵即可儲存圖片。':'Long-press or right-click to save the image.',
   '廣告代言':'Ads & Endorsements',
   '歌詞':'Lyrics','還沒有歌詞。':'No lyrics yet.','歌詞原文（選填）':'Original lyrics (optional)','歌詞翻譯（選填）':'Translated lyrics (optional)','請只填寫您有合法授權使用的歌詞內容。':'Only add lyrics you have the rights to use.','觀看 MV':'Watch MV','MV 連結（選填）':'MV link (optional)',
   '第 {n} 段':'Verse {n}','新增歌詞段落':'Add a verse','請只填寫您有合法授權使用的歌詞內容，可依段落（例如每一段主歌、副歌）分開輸入。':'Only add lyrics you have the rights to use; you can split them into verses (e.g. each verse or chorus).',
@@ -2752,8 +2752,95 @@ function confetti(){
   requestAnimationFrame(frame);
 }
 
-/* ---------- share card: pure CSS/HTML, instant, no canvas ---------- */
-function shareWork(id){
+/* ---------- share card: pear-shaped PNG drawn on canvas (long-press / right-click to save); falls back to the CSS card ---------- */
+function pearPath(ctx){ // pear outline (based on the reference pear): dimple at the top, stem grows out of it, no leaves
+  // B() bends the upper half gently to the right, so the pear curves a little
+  const B=(x,y)=>{const t=Math.max(0,Math.min(1,(900-y)/700));return [x+80*t*t,y];};
+  ctx.beginPath();
+  ctx.moveTo(...B(483,222));
+  ctx.bezierCurveTo(...B(484,180),...B(488,110),...B(506,62));     // stem, left side
+  ctx.quadraticCurveTo(...B(526,44),...B(540,70));           // rounded tip
+  ctx.bezierCurveTo(...B(522,112),...B(514,175),...B(517,222));    // stem, right side
+  ctx.bezierCurveTo(...B(519,238),...B(532,212),...B(557,212));    // dips into the dimple, then up
+  ctx.bezierCurveTo(...B(622,212),...B(688,296),...B(709,375));    // shoulder
+  ctx.bezierCurveTo(...B(731,435),...B(753,495),...B(800,585));    // waist
+  ctx.bezierCurveTo(...B(868,717),...B(918,800),...B(918,915));    // belly
+  ctx.bezierCurveTo(...B(918,1130),...B(730,1292),...B(500,1292)); // bottom
+  ctx.bezierCurveTo(...B(270,1292),...B(82,1130),...B(82,915));
+  ctx.bezierCurveTo(...B(82,800),...B(132,717),...B(200,585));
+  ctx.bezierCurveTo(...B(247,495),...B(269,435),...B(291,375));
+  ctx.bezierCurveTo(...B(312,296),...B(378,212),...B(443,212));
+  ctx.bezierCurveTo(...B(468,212),...B(481,238),...B(483,222));    // back down into the dimple
+  ctx.closePath();
+}
+function wrapLines(ctx,text,maxW,maxLines){
+  // maxW can be a number or an array of per-line widths (the pear narrows toward the bottom)
+  // English words stay whole; Chinese/Korean break between characters; closing punctuation never starts a line
+  const wd=i=>Array.isArray(maxW)?maxW[Math.min(i,maxW.length-1)]:maxW;
+  const fits=(t,i)=>ctx.measureText(t).width<=wd(i);
+  const toks=(text.replace(/\s+/g,' ').trim().match(/[^\s\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF\u3000-\u303F]+|\s+|[\s\S]/g))||[];
+  const out=[];let line='',cut=false;
+  const push=()=>{out.push(line.trim());line='';if(out.length===maxLines)cut=true;};
+  for(let k=0;k<toks.length&&!cut;k++){
+    let tk=toks[k];
+    if(!line&&/^\s+$/.test(tk))continue;
+    if(fits(line+tk,out.length)||/^[\s，。、；：！？）」』…,.;:!?)\]]/.test(tk)){line+=tk;continue;}
+    if(line.trim()){push();if(cut)break;if(/^\s+$/.test(tk))continue;}
+    // a single word longer than the line: split it by character
+    for(const ch of Array.from(tk)){if(!fits(line+ch,out.length)&&line){push();if(cut)break;}line+=ch;}
+  }
+  if(!cut){if(line.trim())out.push(line.trim());}
+  else if(out.length===maxLines){const i=maxLines-1;let l=out[i];while(l&&!fits(l+'…',i))l=Array.from(l).slice(0,-1).join('');out[i]=l.replace(/[\s,，、.。]+$/,'')+'…';}
+  return out;
+}
+function loadImg(src){return new Promise(res=>{if(!src)return res(null);const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src;});}
+async function drawPearCard(o){ // o: {bg,title,rating,noRating,src,meta,syn,brand,hue}
+  try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;}catch(e){}
+  const W=1000,H=1320,c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  const FONT='"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif';
+  const img=await loadImg(o.bg);
+  // body
+  ctx.save();pearPath(ctx);ctx.clip();
+  ctx.fillStyle=`hsl(${o.hue} 45% 10%)`;ctx.fillRect(0,0,W,H);
+  if(img){ // cover, focus near top
+    const bx=60,by=50,bw=880,bh=1240,s=Math.max(bw/img.width,bh/img.height),dw=img.width*s,dh=img.height*s;
+    ctx.drawImage(img,bx+(bw-dw)/2,by+(bh-dh)*0.25,dw,dh);
+  }else{
+    const g=ctx.createLinearGradient(0,215,600,1285);g.addColorStop(0,`hsl(${o.hue} 55% 30%)`);g.addColorStop(1,`hsl(${(o.hue+42)%360} 55% 12%)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+  const v=ctx.createLinearGradient(0,50,0,1290);
+  v.addColorStop(0,'rgba(10,10,10,.05)');v.addColorStop(.45,'rgba(10,10,10,.08)');v.addColorStop(.66,'rgba(10,10,10,.86)');v.addColorStop(1,'rgba(6,6,6,.98)');
+  ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+  // text, centered in the lower bulb
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  let y=815;
+  ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,.7)';ctx.shadowBlur=18;
+  // title: shrink a little to stay on one line; if it still needs two, balance the two lines
+  let fs=66;ctx.font=`900 ${fs}px ${FONT}`;
+  while(fs>52&&ctx.measureText(o.title).width>700){fs-=2;ctx.font=`900 ${fs}px ${FONT}`;}
+  let tl=wrapLines(ctx,o.title,700,2);
+  if(tl.length===2&&!/…$/.test(tl[1])){let mw=700;while(mw>300){const t2=wrapLines(ctx,o.title,mw-20,2);if(t2.length!==2||/…$/.test(t2[1]))break;mw-=20;tl=t2;}}
+  for(const l of tl){ctx.fillText(l,500,y);y+=fs+12;}
+  ctx.shadowBlur=0;y+=4;
+  // rating line, built from pieces
+  const parts=o.rating!=null?[['★','#3ddc84','700 38px'],[' '+o.rating,'#fff','800 38px'],[' / 10','rgba(255,255,255,.7)','600 32px']]:[[o.noRating,'rgba(255,255,255,.7)','600 32px']];
+  const pw=parts.map(p=>{ctx.font=`${p[2]} ${FONT}`;return ctx.measureText(p[0]).width;});
+  let srcW=0;if(o.src){ctx.font=`700 26px ${FONT}`;srcW=ctx.measureText(o.src).width+32;}
+  let x=500-(pw.reduce((a,b)=>a+b,0)+(srcW?srcW+12:0))/2;ctx.textAlign='left';
+  parts.forEach((p,i)=>{ctx.font=`${p[2]} ${FONT}`;ctx.fillStyle=p[1];ctx.fillText(p[0],x,y);x+=pw[i];});
+  if(srcW){x+=12;ctx.fillStyle='rgba(255,255,255,.16)';ctx.beginPath();ctx.moveTo(x+20,y-31);ctx.arcTo(x+srcW,y-31,x+srcW,y+9,20);ctx.arcTo(x+srcW,y+9,x,y+9,20);ctx.arcTo(x,y+9,x,y-31,20);ctx.arcTo(x,y-31,x+srcW,y-31,20);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.font=`700 26px ${FONT}`;ctx.fillText(o.src,x+16,y-1);}
+  ctx.textAlign='center';y+=52;
+  ctx.font=`600 30px ${FONT}`;ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText(o.meta,500,y);y+=58;
+  if(o.syn){ctx.font=`400 28px ${FONT}`;ctx.fillStyle='rgba(255,255,255,.88)';
+    for(const l of wrapLines(ctx,o.syn,[660,620,540],3)){ctx.fillText(l,500,y);y+=44;}}
+  ctx.font=`800 24px ${FONT}`;ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillText(o.brand,500,1240);
+  ctx.restore();
+  // soft rim
+  ctx.save();pearPath(ctx);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=4;ctx.stroke();ctx.restore();
+  return c;
+}
+async function shareWork(id){
   const w=findIn(data.works,id);if(!w)return;
   const h=hue(w.title+w.year),h2=(h+42)%360;
   const bgSrc=w.banner||w.poster,posterSrc=w.poster||bgSrc;
@@ -2766,7 +2853,18 @@ function shareWork(id){
     `<div class="shtop"><div class="shposter" style="${posterBg}"></div></div>`+
     `<div class="shbot"><h4>${esc(title)}</h4><div class="shmeta">${ratingHtml}</div><div class="shmeta"><span class="shof">${w.year?esc(w.year)+' · ':''}#${esc(ty)}</span></div>${syn?`<p>${esc(syn)}</p>`:''}</div>`+
     `<div class="shbrand">${esc(siteName())}</div></div>`;
-  openShareModal(`<div id="shcardwrap">${html}</div><p style="color:rgba(255,255,255,.75);font-size:13px;margin:0;text-align:center">${esc(T('請自行截圖保存。'))}</p><button class="btn sec" id="shareclose">${esc(T('關閉'))}</button>`);
+  const hint=t=>`<p style="color:rgba(255,255,255,.75);font-size:13px;margin:0;text-align:center">${esc(T(t))}</p>`;
+  const closeBtn=`<button class="btn sec" id="shareclose">${esc(T('關閉'))}</button>`;
+  let png='';
+  try{
+    const c=await drawPearCard({bg:bgSrc,title,rating:hasRating(w)?fmtRating(w.rating):null,noRating:T('尚無評分'),src,meta:(w.year?w.year+' · ':'')+'#'+ty,syn,brand:siteName(),hue:h});
+    png=c.toDataURL('image/png'); // throws when the page is opened as a local file
+  }catch(e){png='';}
+  if(png){
+    openShareModal(`<img id="sharepng" src="${png}" alt="${esc(title)}" style="display:block;width:auto;height:auto;max-width:min(80vw,420px);max-height:72vh;filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));-webkit-touch-callout:default;user-select:auto">${hint('長按或按右鍵即可儲存圖片。')}${closeBtn}`);
+  }else{
+    openShareModal(`<div id="shcardwrap">${html}</div>${hint('請自行截圖保存。')}${closeBtn}`);
+  }
 }
 
 function openShareModal(msgHtml){
