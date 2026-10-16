@@ -2841,6 +2841,28 @@ async function drawPearCard(o){ // o: {bg,title,rating,noRating,src,meta,syn,bra
   ctx.save();pearPath(ctx);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=4;ctx.stroke();ctx.restore();
   return c;
 }
+async function pearBackdrop(card,src,hue,story){ // pear on top of the same photo, blurred and darkened; story = 9:16 (fills an IG story), otherwise 4:5
+  const W=1080,H=story?1920:1350,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+  const img=await loadImg(src);
+  ctx.fillStyle=`hsl(${hue} 40% 8%)`;ctx.fillRect(0,0,W,H);
+  if(img){
+    // blur by shrinking then enlarging twice (works in every browser, unlike ctx.filter)
+    const s=Math.max(W/img.width,H/img.height),dw=img.width*s,dh=img.height*s;
+    const t1=document.createElement('canvas');t1.width=Math.ceil(W/16);t1.height=Math.ceil(H/16);
+    const x1=t1.getContext('2d');x1.imageSmoothingQuality='high';x1.drawImage(img,(W-dw)/2/16,(H-dh)/2/16,dw/16,dh/16);
+    const t2=document.createElement('canvas');t2.width=Math.ceil(W/4);t2.height=Math.ceil(H/4);
+    const x2=t2.getContext('2d');x2.imageSmoothingQuality='high';x2.drawImage(t1,0,0,t2.width,t2.height);
+    ctx.imageSmoothingQuality='high';ctx.drawImage(t2,-20,-20,W+40,H+40);
+  }else{
+    const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,`hsl(${hue} 50% 24%)`);g.addColorStop(1,`hsl(${(hue+42)%360} 50% 9%)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);
+  const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.45)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  const cw=Math.round(Math.min(940,H*0.9*card.width/card.height)),ch=Math.round(card.height*cw/card.width);
+  ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=60;ctx.shadowOffsetY=24;
+  ctx.drawImage(card,(W-cw)/2,(H-ch)/2,cw,ch);ctx.restore();
+  return c;
+}
 async function shareWork(id){
   const w=findIn(data.works,id);if(!w)return;
   const h=hue(w.title+w.year),h2=(h+42)%360;
@@ -2856,13 +2878,21 @@ async function shareWork(id){
     `<div class="shbrand">${esc(siteName())}</div></div>`;
   const hint=t=>`<p style="color:rgba(255,255,255,.75);font-size:13px;margin:0;text-align:center">${esc(T(t))}</p>`;
   const closeBtn=`<button class="btn sec" id="shareclose">${esc(T('關閉'))}</button>`;
-  let png='';
+  let png='',pngStory='';
   try{
     const c=await drawPearCard({bg:w.shareImg||bgSrc,title,rating:hasRating(w)?fmtRating(w.rating):null,noRating:T('尚無評分'),src,meta:(w.year?w.year+' · ':'')+'#'+ty,syn,brand:siteName(),hue:h});
-    png=c.toDataURL('image/png'); // throws when the page is opened as a local file
+    png=(await pearBackdrop(c,w.shareImg||bgSrc,h,false)).toDataURL('image/png'); // throws when the page is opened as a local file
+    pngStory=(await pearBackdrop(c,w.shareImg||bgSrc,h,true)).toDataURL('image/png');
   }catch(e){png='';}
   if(png){
-    openShareModal(`<img id="sharepng" src="${png}" alt="${esc(title)}" style="display:block;width:auto;height:auto;max-width:min(80vw,420px);max-height:72vh;filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));-webkit-touch-callout:default;user-select:auto">${hint('長按或按右鍵即可儲存圖片。')}${closeBtn}`);
+    // segmented switch: frosted pill, the selected side is filled white
+    const segOn='background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.25)',segOff='background:transparent;color:rgba(255,255,255,.75);box-shadow:none';
+    const seg=(k,label,on)=>`<button type="button" data-sz="${k}" aria-pressed="${on}" style="border:0;margin:0;padding:6px 16px;border-radius:999px;font:600 13px/1.2 var(--sans);letter-spacing:.02em;cursor:pointer;transition:background .2s,color .2s;${on?segOn:segOff}">${esc(label)}</button>`;
+    const sizeBtns=`<div id="sharesize" role="group" style="display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)">${seg('n','4:5',true)}${seg('s','9:16',false)}</div>`;
+    openShareModal(`${sizeBtns}<img id="sharepng" src="${png}" alt="${esc(title)}" style="display:block;width:auto;height:auto;max-width:min(80vw,420px);max-height:62vh;border-radius:14px;-webkit-touch-callout:default;user-select:auto">${hint('長按或按右鍵即可儲存圖片。')}${closeBtn}`);
+    const sz=document.getElementById('sharesize'),im=document.getElementById('sharepng');
+    if(sz&&im)sz.addEventListener('click',ev=>{const bt=ev.target.closest('button[data-sz]');if(!bt)return;const st=bt.getAttribute('data-sz')==='s';
+      im.src=st?pngStory:png;[].forEach.call(sz.children,x=>{const on=x===bt;x.style.background=on?'#fff':'transparent';x.style.color=on?'#111':'rgba(255,255,255,.75)';x.style.boxShadow=on?'0 1px 4px rgba(0,0,0,.25)':'none';x.setAttribute('aria-pressed',on?'true':'false');});});
   }else{
     openShareModal(`<div id="shcardwrap">${html}</div>${hint('請自行截圖保存。')}${closeBtn}`);
   }
