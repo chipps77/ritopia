@@ -2880,10 +2880,9 @@ async function shareWork(id){
   const closeBtn=`<button class="btn sec" id="shareclose">${esc(T('關閉'))}</button>`;
   let png='',pngStory='';
   try{
-    // inside the pear: 分享圖背景 (or the banner/poster); behind it: the banner (or poster), blurred and darkened
     const c=await drawPearCard({bg:w.shareImg||bgSrc,title,rating:hasRating(w)?fmtRating(w.rating):null,noRating:T('尚無評分'),src,meta:(w.year?w.year+' · ':'')+'#'+ty,syn,brand:siteName(),hue:h});
-    png=(await pearBackdrop(c,bgSrc,h,false)).toDataURL('image/png'); // throws when the page is opened as a local file
-    pngStory=(await pearBackdrop(c,bgSrc,h,true)).toDataURL('image/png');
+    png=(await pearBackdrop(c,w.shareImg||bgSrc,h,false)).toDataURL('image/png'); // throws when the page is opened as a local file
+    pngStory=(await pearBackdrop(c,w.shareImg||bgSrc,h,true)).toDataURL('image/png');
   }catch(e){png='';}
   if(png){
     // segmented switch: frosted pill, the selected side is filled white
