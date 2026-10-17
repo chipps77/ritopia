@@ -572,6 +572,45 @@ button.awth{padding:0;border:0}
   .row.cards>.card .thumb{margin:0;border-radius:12px}
   .grid.iv .card .thumb{margin:0;border-radius:10px}
 }
+/* 地圖：全螢幕與手機兩指提示 */
+.mapfull-on,.mapfull-on body{overflow:hidden}
+.mapbox.mapfull{position:fixed;inset:0;z-index:60;height:auto !important;border-radius:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.mapbox.mapfull .mapctl{top:calc(10px + env(safe-area-inset-top,0px))}
+.mapbox.mapfull .mapctl button{width:44px;height:44px}
+.mapbox.mapfull .ppop{bottom:calc(12px + env(safe-area-inset-bottom,0px));max-height:55%}
+.maphint{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.45);color:#fff;font-size:16px;font-weight:600;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.mapbox.hinton:not(.mapfull) .maphint{opacity:1}
+@media (hover:none) and (pointer:coarse){
+  .mapbox svg{touch-action:pan-y}
+  .mapbox.mapfull svg{touch-action:none}
+  .mapctl button{width:40px;height:40px}
+  .mapbox:not(.mapfull) .ppop{max-height:calc(100% - 16px)}
+}
+/* 手機版：地圖固定在上方（不影響電腦版） */
+@media (max-width:860px){
+  .mapwrap>div:first-child{display:contents}
+  .mapbox:not(.mapfull){position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--chiph,0px));z-index:9;height:min(320px,42vh);border-radius:0;box-shadow:0 1px 0 var(--line)}
+  .mapbox:not(.mapfull) .ppop{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;row-gap:6px;align-content:start;max-height:50%;padding:12px}
+  .mapbox:not(.mapfull) .ppop>*:not(.ppx){grid-column:2}
+  .mapbox:not(.mapfull) .ppop>.ppimg{grid-column:1;grid-row:1/span 4;width:72px;aspect-ratio:1;align-self:start}
+  .mapbox:not(.mapfull) .ppop h3{font-size:16px}
+}
+/* 搜尋結果標題：小螢幕時說明文字換到下一行，不擠壓標題 */
+.pagehead{flex-wrap:wrap;row-gap:2px}
+.pagehead h2{flex:none}
+/* 手機版全站搜尋：每一類結果一排，左右滑動 */
+@media (max-width:860px){
+  .srow{display:flex !important;gap:12px;overflow-x:auto;margin:0 -16px;padding:2px 16px 12px;scroll-snap-type:x proximity;scroll-padding:0 16px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;max-height:none;border-top:0}
+  .srow::-webkit-scrollbar{display:none}
+  .srow>*{flex:0 0 78%;min-width:0;scroll-snap-align:start}
+  .srow.iv>*{flex-basis:62%}
+  .srow.products>*,.srow.campaign>*{flex-basis:46%}
+  .srow .card .thumb,.srow.iv .card .thumb{margin:0;border-radius:10px}
+  .srow>.vrow,.srow>.aw,.srow>.prow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .srow>.vrow .vth{flex:0 0 110px}
+  .srow>.vrow .vt{min-width:0;flex:1}
+  .srow>.prow{flex-basis:auto;max-width:78%}
+}
 .bootmsg{margin:0;padding:96px 16px;text-align:center;color:var(--muted);font-size:14px;letter-spacing:.02em}
 </style>
 </head>
@@ -630,6 +669,8 @@ const I18N={
   '未填年份':'Year unknown','這個分類下沒有獎項。':'No awards in this category.','還沒有獎項紀錄。':'No awards yet.',
   '拍攝地點地圖':'Filming locations map','放大':'Zoom in','縮小':'Zoom out','回到全部地點':'Show all locations',
   '拖曳移動，滾輪或雙指縮放，點圖釘看詳細資料。':'Drag to move, scroll or pinch to zoom, tap a pin for details.',
+  '用兩指移動或縮放地圖，點兩下放大，點圖釘看詳細資料。也可以按 ⤢ 全螢幕操作。':'Use two fingers to move or zoom the map, double-tap to zoom in, tap a pin for details. Or tap ⤢ for full screen.',
+  '用兩指移動地圖':'Use two fingers to move the map','全螢幕地圖':'Full-screen map','離開全螢幕':'Exit full screen',
   '作品裡的影片':'Videos in works','訪談、節目與周邊':'Interviews, shows and merch','拍攝地點':'Filming locations','所有分頁都找不到符合的內容。':'Nothing found on any page.',
   '編輯連結':'Edit link','編輯作品':'Edit work','編輯影片':'Edit video','編輯獎項':'Edit award','編輯地點':'Edit location',
   '標題':'Title','網址':'URL','分類':'Category','發布時間（選填）':'Published (optional)','例如 2024-05':'e.g. 2024-05',
@@ -1697,30 +1738,37 @@ function viewAwards(){
   list.forEach(a=>{const y=a.year||'';let g=groups.find(x=>x.y===y);if(!g){g={y,items:[]};groups.push(g);}g.items.push(a);});
   return groups.map(g=>`<section class="ayear"><h3>${esc(g.y||T('未填年份'))}</h3>${g.items.map(awardRow).join('')}</section>`).join('');
 }
+let mapFull=false;
+const TOUCH_UI=!!(window.matchMedia&&window.matchMedia('(hover:none) and (pointer:coarse)').matches);
 const visiblePlaces=()=>data.places.filter(p=>!ui.tag||p.work===ui.tag);
 function viewMap(){
   const list=visiblePlaces();
-  return `<div class="mapwrap"><div><div class="mapbox"><svg id="map" viewBox="0 0 3600 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('拍攝地點地圖'))}"><rect class="ocean" x="-8000" y="-8000" width="19600" height="17500"/><path class="land" d="${LAND}"/>${KOREA?`<g transform="scale(${KOREA.s})"><path class="kprov" d="${KOREA.prov}"/><path class="kmuni" d="${KOREA.muni}"/></g><g id="klabels"></g>`:''}<g id="pins"></g></svg>`+
-  `<div class="mapctl"><button data-act="mapzoom" data-f="0.6" aria-label="${esc(T('放大'))}">+</button><button data-act="mapzoom" data-f="1.6" aria-label="${esc(T('縮小'))}">−</button><button data-act="mapfit" aria-label="${esc(T('回到全部地點'))}">${icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',18)}</button></div><div id="pplace"></div></div>`+
-  `<p class="hint pad">${esc(T('拖曳移動，滾輪或雙指縮放，點圖釘看詳細資料。'))}</p></div><div class="plist" id="plist">${placeRows(list)}</div></div>`;
+  return `<div class="mapwrap"><div><div class="mapbox${mapFull?' mapfull':''}"><svg id="map" viewBox="0 0 3600 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('拍攝地點地圖'))}"><rect class="ocean" x="-8000" y="-8000" width="19600" height="17500"/><path class="land" d="${LAND}"/>${KOREA?`<g transform="scale(${KOREA.s})"><path class="kprov" d="${KOREA.prov}"/><path class="kmuni" d="${KOREA.muni}"/></g><g id="klabels"></g>`:''}<g id="pins"></g></svg>`+
+  `<div class="mapctl"><button data-act="mapzoom" data-f="0.6" aria-label="${esc(T('放大'))}">+</button><button data-act="mapzoom" data-f="1.6" aria-label="${esc(T('縮小'))}">−</button><button data-act="mapfit" aria-label="${esc(T('回到全部地點'))}">${icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',18)}</button><button data-act="mapfull" aria-pressed="${mapFull?'true':'false'}" aria-label="${esc(T(mapFull?'離開全螢幕':'全螢幕地圖'))}">${mapFull?'×':icon('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',18)}</button></div><div class="maphint" aria-hidden="true">${esc(T('用兩指移動地圖'))}</div><div id="pplace"></div></div>`+
+  `<p class="hint pad">${esc(T(TOUCH_UI?'用兩指移動或縮放地圖，點兩下放大，點圖釘看詳細資料。也可以按 ⤢ 全螢幕操作。':'拖曳移動，滾輪或雙指縮放，點圖釘看詳細資料。'))}</p></div><div class="plist" id="plist">${placeRows(list)}</div></div>`;
 }
+/* 搜尋用：不分大小寫、全形半形視為相同 */
+const sfold=s=>{let t=String(s==null?'':s);try{t=t.normalize('NFKC');}catch(e){}return t.toLowerCase();};
+/* 年份範圍（例如 2014–2017）展開成每一年，讓搜尋 2015 也找得到 */
+const yearSpan=s=>{const m=String(s||'').match(/(\d{4})\s*[–—~～\-－至到]\s*(\d{4}|今|現在|present|now)?/i);if(!m)return '';const a=+m[1],b=/^\d{4}$/.test(m[2]||'')?+m[2]:(m[2]?new Date().getFullYear():a);const o=[];for(let y=a;y<=b&&o.length<40;y++)o.push(y);return o.join(' ');};
+const brandBlob=b=>{const units=[b].concat(b.subBrands||[]);return units.map(u=>[u.title,u.yearLabel,yearSpan(u.yearLabel),trText(u)].concat((u.campaigns||[]).map(c=>[c.title,c.date,c.note,trText(c)].join(' '))).join(' ')).join(' ');};
 function viewSearch(){
-  const q=ui.q.trim().toLowerCase(),qa=(TAG_ALIAS[ui.q.trim()]||'').toLowerCase();
-  const has=(...a)=>a.some(s=>{const t=String(s==null?'':s).toLowerCase();return t.includes(q)||(!!qa&&t.includes(qa));});
+  const q=sfold(ui.q.trim()),qa=sfold(TAG_ALIAS[ui.q.trim()]||'');
+  const has=(...a)=>a.some(s=>{const t=sfold(s);return t.includes(q)||(!!qa&&t.includes(qa));});
   const all=ui.cat==='主頁',inPage=c=>all||ui.cat===c;
   const ws=inPage('作品')?data.works.filter(w=>has(w.title,w.type,T(w.type),w.year,w.synopsis,w.ratingSource,w.tags.join(' '),w.tags.map(tagLabel).join(' '),w.fields.map(f=>f[0]+f[1]).join(' '),trText(w))):[];
   const vids=[];if(inPage('作品'))data.works.forEach(w=>w.videos.forEach(v=>{if(has(v.title,v.kind,T(v.kind),w.title,trText(v),trText(w)))vids.push([w,v]);}));
-  const its=data.items.filter(it=>inPage(it.cat)&&has(it.title,it.tags.join(' '),it.tags.map(tagLabel).join(' '),it.url,it.cat,T(it.cat),it.price,trText(it),qaBlob(it)));
+  const its=data.items.filter(it=>inPage(it.cat)&&has(it.title,it.tags.join(' '),it.tags.map(tagLabel).join(' '),it.url,it.cat,T(it.cat),it.price,trText(it),qaBlob(it),it.date,it.sortDate,it.note,it.who,it.who?T(it.who):'',it.cat==='廣告代言'?brandBlob(it):''));
   const aws=inPage('獎項')?data.awards.filter(a=>has(a.award,a.edition,a.category,a.work,a.year,a.result,T(a.result),a.note,a.speech,a.speechOrig,trText(a))):[];
-  const pls=inPage('拍攝地圖')?data.places.filter(p=>has(p.name,p.work,p.address,p.note,trText(p))):[];
+  const pls=inPage('拍攝地圖')?data.places.filter(p=>{const wk=p.work?data.works.find(x=>x.title===p.work):null;return has(p.name,p.work,p.address,p.note,trText(p),wk?wk.year:'',wk?trText(wk):'');}):[];
   const sgs=inPage('作品')?data.songs.filter(x=>has(x.title,x.artist,x.work,x.year,x.note,trText(x))):[];
-  let h='';
+  let h='';const sw=all?' srow':'';
   if(ws.length)h+=`<h3 class="rowh">${esc(T('作品'))}</h3><div class="row">${ws.map(posterHtml).join('')}</div>`;
-  if(vids.length)h+=`<h3 class="rowh">${esc(T('作品裡的影片'))}</h3><div class="vlist">${vids.map((x,i)=>vrowHtml(x[1],i,x[0],true)).join('')}</div>`;
-  ['訪談','節目','周邊','廣告代言'].forEach(c=>{const g=its.filter(it=>it.cat===c);if(g.length)h+=`<h3 class="rowh">${esc(T(c))}</h3><div class="grid">${g.map(cardHtml).join('')}</div>`;});
-  if(aws.length)h+=`<h3 class="rowh">${esc(T('獎項'))}</h3>${aws.map(awardRow).join('')}`;
+  if(vids.length)h+=`<h3 class="rowh">${esc(T('作品裡的影片'))}</h3><div class="vlist${sw}">${vids.map((x,i)=>vrowHtml(x[1],i,x[0],true)).join('')}</div>`;
+  ['訪談','節目','周邊','廣告代言'].forEach(c=>{const g=its.filter(it=>it.cat===c);if(g.length)h+=`<h3 class="rowh">${esc(T(c))}</h3><div class="grid${c==='周邊'?' products':''}${c==='訪談'?' iv':''}${c==='廣告代言'?' campaign':''}${sw}">${g.map(cardHtml).join('')}</div>`;});
+  if(aws.length)h+=`<h3 class="rowh">${esc(T('獎項'))}</h3>${all?`<div class="awlist${sw}">${aws.map(awardRow).join('')}</div>`:aws.map(awardRow).join('')}`;
   if(sgs.length)h+=`<h3 class="rowh">${esc(T('歌曲'))}</h3><div class="row songs">${sgs.map(songCard).join('')}</div>`;
-  if(pls.length)h+=`<h3 class="rowh">${esc(T('拍攝地點'))}</h3><div class="plist">${placeRows(pls)}</div>`;
+  if(pls.length)h+=`<h3 class="rowh">${esc(T('拍攝地點'))}</h3><div class="plist${sw}">${placeRows(pls)}</div>`;
   return h||`<div class="empty"><span>${esc(T(all?'所有分頁都找不到符合的內容。':'這個分頁找不到符合的內容。'))}</span></div>`;
 }
 function renderView(){
@@ -1828,11 +1876,13 @@ function zoomAt(f,px,py){
 }
 function initMap(){
   const svg=$('map');if(!svg)return;
+  setChipH();
   if(!mv)mv=fitView();
   applyView();
   renderPlacePopup();
   const ptrs={};let start=null,moved=false,pinchD=0;
   svg.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='touch')return;
     ptrs[e.pointerId]={x:e.clientX,y:e.clientY};moved=false;
     const ids=Object.keys(ptrs);
     if(ids.length===1)start={x:e.clientX,y:e.clientY};
@@ -1855,15 +1905,78 @@ function initMap(){
   const up=e=>{delete ptrs[e.pointerId];pinchD=0;};
   svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   svg.addEventListener('wheel',e=>{e.preventDefault();zoomAt(Math.exp(e.deltaY*0.0015),e.clientX,e.clientY);},{passive:false});
+  /* 手機：一般畫面單指照常捲動網頁、兩指移動／縮放地圖；全螢幕時單指也能拖曳；點兩下放大 */
+  const box=svg.closest('.mapbox');
+  let t1=null,t2=null,tMoved=false,lastTap=null,hintT=0;
+  const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2,d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)});
+  const showHint=()=>{if(!box)return;box.classList.add('hinton');clearTimeout(hintT);hintT=setTimeout(()=>box.classList.remove('hinton'),1300);};
+  svg.addEventListener('touchstart',e=>{
+    const ts=e.touches;
+    if(ts.length===1){t1={x:ts[0].clientX,y:ts[0].clientY,t:Date.now()};t2=null;tMoved=false;}
+    else if(ts.length>=2){e.preventDefault();t2=mid(ts[0],ts[1]);tMoved=true;if(box)box.classList.remove('hinton');}
+  },{passive:false});
+  svg.addEventListener('touchmove',e=>{
+    const ts=e.touches;
+    if(ts.length>=2){
+      e.preventDefault();
+      const c=mid(ts[0],ts[1]);
+      if(t2){
+        const k=mv.w/mapSize().cw;mv.cx-=(c.x-t2.x)*k;mv.cy-=(c.y-t2.y)*k;
+        if(t2.d>0&&c.d>0)zoomAt(t2.d/c.d,c.x,c.y);else applyView();
+      }
+      t2=c;tMoved=true;
+    }else if(ts.length===1&&t1){
+      const x=ts[0].clientX,y=ts[0].clientY;
+      if(!tMoved&&Math.hypot(x-t1.x,y-t1.y)>8){tMoved=true;if(!mapFull)showHint();}
+      if(mapFull&&tMoved){
+        e.preventDefault();
+        const k=mv.w/mapSize().cw;mv.cx-=(x-t1.x)*k;mv.cy-=(y-t1.y)*k;t1.x=x;t1.y=y;applyView();
+      }
+    }
+  },{passive:false});
+  svg.addEventListener('touchend',e=>{
+    if(e.touches.length===1){t1={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};t2=null;return;}
+    if(e.touches.length>0)return;
+    const ct=e.changedTouches[0];
+    if(!tMoved&&t1&&ct&&Date.now()-t1.t<300){
+      const now=Date.now();
+      if(lastTap&&now-lastTap.t<320&&Math.hypot(ct.clientX-lastTap.x,ct.clientY-lastTap.y)<30){e.preventDefault();zoomAt(0.5,ct.clientX,ct.clientY);lastTap=null;}
+      else lastTap={t:now,x:ct.clientX,y:ct.clientY};
+    }
+    t1=null;t2=null;
+  },{passive:false});
+  svg.addEventListener('gesturestart',e=>e.preventDefault());
 }
+/* 手機版（≤860px）地圖固定在分類標籤下方，清單在下面捲動 */
+function mapIsSticky(){const b=document.querySelector('.mapbox');return !!b&&!mapFull&&getComputedStyle(b).position==='sticky';}
+function setChipH(){
+  const c=document.querySelector('.chipbar');
+  const h=(c&&c.offsetParent!==null&&getComputedStyle(c).position==='sticky')?c.offsetHeight:0;
+  document.documentElement.style.setProperty('--chiph',h+'px');
+}
+window.addEventListener('resize',()=>{if($('map'))setChipH();});
+function setMapFull(on){
+  mapFull=!!on;
+  const box=document.querySelector('.mapbox');if(!box)return;
+  box.classList.toggle('mapfull',mapFull);
+  document.documentElement.classList.toggle('mapfull-on',mapFull);
+  const b=box.querySelector('[data-act=mapfull]');
+  if(b){b.setAttribute('aria-pressed',mapFull?'true':'false');b.setAttribute('aria-label',T(mapFull?'離開全螢幕':'全螢幕地圖'));b.innerHTML=mapFull?'×':icon('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',18);}
+  requestAnimationFrame(applyView);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mapFull)setMapFull(false);});
 function selectPlace(id,zoom){
   selPlace=id;
   const p=findIn(data.places,id);
-  if(zoom&&p&&mv){const xy=proj(p.lat,p.lng);mv.cx=xy[0];mv.cy=xy[1];mv.w=Math.min(mv.w,24);}
+  const stickyMap=mapIsSticky();
+  if(zoom&&p&&mv){const xy=proj(p.lat,p.lng);mv.cx=xy[0];mv.cy=xy[1];mv.w=Math.min(mv.w,24);
+    /* 手機固定地圖：把景點放在地圖上半部，不被下方的詳細資料蓋住 */
+    if(stickyMap){const sz=mapSize();mv.cy+=mv.w*sz.ch/sz.cw*0.22;}}
   const pl=$('plist');if(pl)pl.innerHTML=placeRows(visiblePlaces());
   renderPlacePopup();applyView();
   const pop=document.querySelector('.ppop');
-  if(pop&&pop.scrollIntoView&&window.matchMedia&&window.matchMedia('(max-width: 900px)').matches){
+  if(stickyMap){/* 手機：地圖固定在上方，不捲動頁面，停在原本看的清單位置 */}
+  else if(pop&&pop.scrollIntoView&&window.matchMedia&&window.matchMedia('(max-width: 900px)').matches){
     pop.scrollIntoView({block:'center',behavior:'smooth'});
   }else{
     const row=document.querySelector('.prow.sel');if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});
@@ -2388,19 +2501,30 @@ function parseHash(){
   return {cat:parts[0],work:parts[1]||''};
 }
 /* 從列表點進詳細頁時記住篩選和捲動位置；按「← 返回」或瀏覽器上一頁回到同一個列表時還原 */
+/* 也記住搜尋字、左右滑動列的位置與精選輪播；用瀏覽器上一頁回到任何列表（包含主頁搜尋結果）都會還原 */
 const listMem={};
-function showPage(cat,work){
+try{if('scrollRestoration' in history)history.scrollRestoration='manual';}catch(e){}
+const sideRows=()=>Array.from(document.querySelectorAll('.chipbar,#view .row,#view .srow'));
+let userScrolled=false;
+['touchstart','wheel','keydown'].forEach(t=>window.addEventListener(t,()=>{userScrolled=true;},{passive:true}));
+function restoreListPos(back){
+  const rows=sideRows();(back.rows||[]).forEach((x,i)=>{if(rows[i])rows[i].scrollLeft=x;});
+  userScrolled=false;
+  const go=()=>{if(userScrolled)return;if(Math.abs((window.scrollY||0)-back.y)>2)window.scrollTo(0,back.y);};
+  go();requestAnimationFrame(go);[60,160,350,700,1200].forEach(ms=>setTimeout(go,ms));
+}
+function showPage(cat,work,viaHash){
   const changed=(work||'')!==ui.work||cat!==ui.cat;
   const prevCat=ui.cat,prevWork=ui.work;
-  if(!prevWork&&!ui.q.trim())listMem[prevCat]={tag:ui.tag,sub:ui.sub,fty:ui.fty,who:ui.who,y:window.scrollY||0};
+  if(!prevWork)listMem[prevCat]={tag:ui.tag,sub:ui.sub,fty:ui.fty,who:ui.who,q:ui.q,hero:heroIdx,rows:sideRows().map(e=>e.scrollLeft),y:window.scrollY||0};
   ui.cat=cat;ui.work=work||'';ui.tag='';ui.sub='';ui.fty='';ui.subBrand='';ui.who='';ui.q='';$('q').value='';
   if(!validDetail(ui.cat,ui.work))ui.work='';
-  const back=!ui.work&&cat===prevCat&&!!prevWork&&listMem[cat];
-  if(back){ui.tag=back.tag;ui.sub=back.sub;ui.fty=back.fty;ui.who=back.who;}
+  const back=!ui.work&&!!prevWork&&(cat===prevCat||!!viaHash)&&listMem[cat];
+  if(back){ui.tag=back.tag;ui.sub=back.sub;ui.fty=back.fty;ui.who=back.who;ui.q=back.q||'';$('q').value=ui.q;}
   if(changed)ui.tab='正片';
-  mv=null;selPlace='';moreOpen=false;lb=null;confirmStill='';heroIdx=0;
+  mv=null;selPlace='';moreOpen=false;lb=null;confirmStill='';heroIdx=back?(back.hero||0):0;mapFull=false;document.documentElement.classList.remove('mapfull-on');
   saveUi();renderAll();
-  if(back){window.scrollTo(0,back.y);requestAnimationFrame(()=>window.scrollTo(0,back.y));}else window.scrollTo(0,0);
+  if(back)restoreListPos(back);else window.scrollTo(0,0);
   const wa=currentAward();if(wa&&wa.result==='得獎')confetti();
   const w2=currentWork();
   if(w2&&w2.title==='惡鬼'&&lastWaterFxId!==w2.id){
@@ -2417,7 +2541,7 @@ function navigate(cat,work){
 }
 window.addEventListener('hashchange',()=>{
   const r=parseHash();
-  if(r&&(r.cat!==ui.cat||r.work!==ui.work))showPage(r.cat,r.work);
+  if(r&&(r.cat!==ui.cat||r.work!==ui.work))showPage(r.cat,r.work,true);
 });
 function setLang(l){
   if(!LANGS.some(x=>x.k===l)||l===lang)return;
@@ -2531,6 +2655,7 @@ case 'editvideo':openModal('video',id,b.getAttribute('data-w'));break;
     case 'rmimg':m.v[b.getAttribute('data-k')]='';renderModal();break;
     case 'mapzoom':zoomAt(parseFloat(b.getAttribute('data-f')));break;
     case 'mapfit':mv=fitView();applyView();break;
+    case 'mapfull':setMapFull(!mapFull);break;
     case 'pslide':photoHold=Date.now()+15000;photoSet(parseInt(b.getAttribute('data-i'),10)||0);break;
     case 'pprev':photoHold=Date.now()+15000;photoSet(photoIdx-1);break;
     case 'pnext':photoHold=Date.now()+15000;photoSet(photoIdx+1);break;
