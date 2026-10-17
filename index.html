@@ -676,7 +676,7 @@ const I18N={
   '給金泰梨說一句話':'Say something to Kim Tae-ri','用 Email 寄出審核':'Send by email for review','想說的話':'Your message','最多 60 字。會先寄給站長審核，通過後才會出現在彈幕牆上。':'Up to 60 characters. It is sent to the site owner first and only appears on the wall after approval.','請先寫下想說的話。':'Please write your message first.','最多 60 字。':'Up to 60 characters.','站長還沒有設定 Email，先複製這段話，再從「聯絡我們」傳給站長。':'The owner has not set an email yet. Copy your message and send it through “Contact us”.',
   '復原已撤下的地點（{n}）':'Restore hidden places ({n})',
   '頁面最底部小字':'Small line at the very bottom of every page',
-  '其中《二十五，二十一》、《惡鬼》、《正年》的拍攝地點資料由 {src} 提供。':'Filming locations for Twenty-Five Twenty-One, Revenant and Jeongnyeon: The Star Is Born are provided by {src}.',
+  '其中《惡鬼》、《正年》及部分《二十五，二十一》的拍攝地點資料由 {src} 提供，另有部分《二十五，二十一》地點參考自 {src2}。':'Filming locations for Revenant, Jeongnyeon: The Star Is Born and part of Twenty-Five Twenty-One are provided by {src}, with additional Twenty-Five Twenty-One locations referenced from {src2}.',
   '感言原文（選填）':'Original text of the speech (optional)','編輯輪播照片':'Edit slideshow photos','輪播照片':'Slideshow photos','會自動裁成直式並縮小。主頁會像精選作品一樣輪播顯示（至少 2 張）。':'Cropped to portrait and resized automatically. The home page shows them as a slideshow, like the featured works (at least 2 photos).',
   '對話人物（選填，訪談是對話形式時才需要）':'People in the conversation (optional, for conversation-style interviews)','標記':'Mark','原文名':'Original name','新增人物':'Add person','新增對話':'Add conversation turn','對話':'Conversation','說話的人':'Speaker',
   'MV 連結（選填）':'Music video link (optional)','觀看 MV':'Watch MV',
@@ -1025,7 +1025,7 @@ function renderStatic(){
   $('chipbar').setAttribute('aria-label',T('篩選'));
 }
 function renderPageNote(){
-  if(ui.cat==='拍攝地圖'&&!ui.q.trim()){$('pagenote').innerHTML=`<span class="mapcredit">${esc(T('其中《二十五，二十一》、《惡鬼》、《正年》的拍攝地點資料由 {src} 提供。')).replace('{src}','<a href="https://kdramamap.com/" target="_blank" rel="noopener">KDrama Map</a>')}</span>`;return;}
+  if(ui.cat==='拍攝地圖'&&!ui.q.trim()){$('pagenote').innerHTML=`<span class="mapcredit">${esc(T('其中《惡鬼》、《正年》及部分《二十五，二十一》的拍攝地點資料由 {src} 提供，另有部分《二十五，二十一》地點參考自 {src2}。')).replace('{src}','<a href="https://kdramamap.com/" target="_blank" rel="noopener">KDrama Map</a>').replace('{src2}','<a href="https://creatrip.com/zh-TW/blog/12390" target="_blank" rel="noopener">Creatrip</a>')}</span>`;return;}
   $('pagenote').textContent=(ui.cat==='訪談'&&!currentInterview()&&!ui.q.trim())?T('人總是在改變，不要用片段的文字定義一個人。'):'';}
 function renderBrand(){$('brand').textContent=siteName();document.title=(ui.cat==='主頁'?'':T(ui.cat)+' - ')+siteName();}
 function renderNav(){$('shell').classList.toggle('mini',mini);$('ham').setAttribute('aria-expanded',mini?'false':'true');}
