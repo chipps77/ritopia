@@ -590,10 +590,8 @@ button.awth{padding:0;border:0}
 @media (max-width:860px){
   .mapwrap>div:first-child{display:contents}
   .mapbox:not(.mapfull){position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--chiph,0px));z-index:9;height:min(320px,42vh);border-radius:0;box-shadow:0 1px 0 var(--line)}
-  .mapbox:not(.mapfull) .ppop{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;row-gap:6px;align-content:start;max-height:50%;padding:12px}
-  .mapbox:not(.mapfull) .ppop>*:not(.ppx){grid-column:2}
-  .mapbox:not(.mapfull) .ppop>.ppimg{grid-column:1;grid-row:1/span 4;width:72px;aspect-ratio:1;align-self:start}
-  .mapbox:not(.mapfull) .ppop h3{font-size:16px}
+  /* 打開景點詳細資料時地圖變高，詳細資料維持原本的大圖，上方仍看得到景點 */
+  .mapbox.hassel:not(.mapfull){height:min(500px,64vh)}
 }
 /* 搜尋結果標題：小螢幕時說明文字換到下一行，不擠壓標題 */
 .pagehead{flex-wrap:wrap;row-gap:2px}
@@ -1743,7 +1741,7 @@ const TOUCH_UI=!!(window.matchMedia&&window.matchMedia('(hover:none) and (pointe
 const visiblePlaces=()=>data.places.filter(p=>!ui.tag||p.work===ui.tag);
 function viewMap(){
   const list=visiblePlaces();
-  return `<div class="mapwrap"><div><div class="mapbox${mapFull?' mapfull':''}"><svg id="map" viewBox="0 0 3600 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('拍攝地點地圖'))}"><rect class="ocean" x="-8000" y="-8000" width="19600" height="17500"/><path class="land" d="${LAND}"/>${KOREA?`<g transform="scale(${KOREA.s})"><path class="kprov" d="${KOREA.prov}"/><path class="kmuni" d="${KOREA.muni}"/></g><g id="klabels"></g>`:''}<g id="pins"></g></svg>`+
+  return `<div class="mapwrap"><div><div class="mapbox${mapFull?' mapfull':''}${selPlace?' hassel':''}"><svg id="map" viewBox="0 0 3600 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('拍攝地點地圖'))}"><rect class="ocean" x="-8000" y="-8000" width="19600" height="17500"/><path class="land" d="${LAND}"/>${KOREA?`<g transform="scale(${KOREA.s})"><path class="kprov" d="${KOREA.prov}"/><path class="kmuni" d="${KOREA.muni}"/></g><g id="klabels"></g>`:''}<g id="pins"></g></svg>`+
   `<div class="mapctl"><button data-act="mapzoom" data-f="0.6" aria-label="${esc(T('放大'))}">+</button><button data-act="mapzoom" data-f="1.6" aria-label="${esc(T('縮小'))}">−</button><button data-act="mapfit" aria-label="${esc(T('回到全部地點'))}">${icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',18)}</button><button data-act="mapfull" aria-pressed="${mapFull?'true':'false'}" aria-label="${esc(T(mapFull?'離開全螢幕':'全螢幕地圖'))}">${mapFull?'×':icon('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',18)}</button></div><div class="maphint" aria-hidden="true">${esc(T('用兩指移動地圖'))}</div><div id="pplace"></div></div>`+
   `<p class="hint pad">${esc(T(TOUCH_UI?'用兩指移動或縮放地圖，點兩下放大，點圖釘看詳細資料。也可以按 ⤢ 全螢幕操作。':'拖曳移動，滾輪或雙指縮放，點圖釘看詳細資料。'))}</p></div><div class="plist" id="plist">${placeRows(list)}</div></div>`;
 }
@@ -1969,14 +1967,24 @@ function selectPlace(id,zoom){
   selPlace=id;
   const p=findIn(data.places,id);
   const stickyMap=mapIsSticky();
-  if(zoom&&p&&mv){const xy=proj(p.lat,p.lng);mv.cx=xy[0];mv.cy=xy[1];mv.w=Math.min(mv.w,24);
-    /* 手機固定地圖：把景點放在地圖上半部，不被下方的詳細資料蓋住 */
-    if(stickyMap){const sz=mapSize();mv.cy+=mv.w*sz.ch/sz.cw*0.22;}}
+  if(stickyMap){
+    /* 手機固定地圖：先放大地圖、顯示詳細資料，再把景點放在詳細資料上方的空間 */
+    const box=document.querySelector('.mapbox');if(box)box.classList.add('hassel');
+    const pl=$('plist');if(pl)pl.innerHTML=placeRows(visiblePlaces());
+    renderPlacePopup();
+    if(zoom&&p&&mv){
+      const xy=proj(p.lat,p.lng);mv.cx=xy[0];mv.cy=xy[1];mv.w=Math.min(mv.w,24);
+      const sz=mapSize(),pop=document.querySelector('.ppop'),ph=pop?pop.getBoundingClientRect().height+12:0;
+      const ty=Math.max(36,(sz.ch-ph)/2);
+      mv.cy+=mv.w*sz.ch/sz.cw*(0.5-ty/sz.ch);
+    }
+    applyView();return;
+  }
+  if(zoom&&p&&mv){const xy=proj(p.lat,p.lng);mv.cx=xy[0];mv.cy=xy[1];mv.w=Math.min(mv.w,24);}
   const pl=$('plist');if(pl)pl.innerHTML=placeRows(visiblePlaces());
   renderPlacePopup();applyView();
   const pop=document.querySelector('.ppop');
-  if(stickyMap){/* 手機：地圖固定在上方，不捲動頁面，停在原本看的清單位置 */}
-  else if(pop&&pop.scrollIntoView&&window.matchMedia&&window.matchMedia('(max-width: 900px)').matches){
+  if(pop&&pop.scrollIntoView&&window.matchMedia&&window.matchMedia('(max-width: 900px)').matches){
     pop.scrollIntoView({block:'center',behavior:'smooth'});
   }else{
     const row=document.querySelector('.prow.sel');if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});
@@ -1984,6 +1992,7 @@ function selectPlace(id,zoom){
 }
 function closePlace(){
   selPlace='';
+  {const box=document.querySelector('.mapbox');if(box)box.classList.remove('hassel');}
   const pl=$('plist');if(pl)pl.innerHTML=placeRows(visiblePlaces());
   renderPlacePopup();applyView();
 }
