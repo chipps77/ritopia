@@ -1409,6 +1409,19 @@ function brandStartYear(b){
   const ds=(b.campaigns||[]).map(c=>c.date).filter(Boolean).sort();
   return ds.length?ds[0]:'';
 }
+function brandEndKey(b){
+  const units=[b].concat(b.subBrands||[]);
+  if(units.some(u=>u.current))return '9999';
+  let best='';
+  units.forEach(u=>{
+    const yl=String(u.yearLabel||'');
+    if(/今|現在|present|now/i.test(yl))best='9999';
+    (yl.match(/\d{4}/g)||[]).forEach(y=>{if(y>best)best=y;});
+  });
+  if(best)return best;
+  const ds=allCampaignsOf(b).map(c=>String(c.date||'').slice(0,4)).filter(Boolean).sort();
+  return ds.length?ds[ds.length-1]:'';
+}
 function allCampaignsOf(b){
   if(b.subBrands&&b.subBrands.length)return [].concat(...b.subBrands.map(sb=>sb.campaigns||[]));
   return b.campaigns||[];
@@ -1673,14 +1686,15 @@ function viewLinks(cat){
   }
   let list=data.items.filter(it=>it.cat===cat&&(!ui.tag||(ui.tag==='現在'?!!it.current:matchTag(it,ui.tag)))&&(!ui.sub||it.tags.includes(ui.sub))&&(!(cat==='周邊'&&ui.fty)||it.tags.includes(ui.fty))&&(!(cat==='節目'&&ui.who)||it.who===ui.who));
 if(cat==='廣告代言'){
-    const dir=ui.sorts[cat]||'new';
-    list.sort((a,b)=>{
-      if(dir==='new'&&!!a.current!==!!b.current)return a.current?-1:1;
-      const dateA=brandDateOf(a)||brandStartYear(a);
-      const dateB=brandDateOf(b)||brandStartYear(b);
-      const cmp=String(dateB).localeCompare(String(dateA));
-      return dir==='new'?cmp:-cmp;
+    const dated=list.filter(x=>brandEndKey(x)||brandStartYear(x)),undated=list.filter(x=>!(brandEndKey(x)||brandStartYear(x)));
+    dated.sort((x,y)=>{
+      const ex=brandEndKey(x)||brandStartYear(x),ey=brandEndKey(y)||brandStartYear(y);
+      if(ex!==ey)return ex<ey?-1:1;
+      const sx=brandStartYear(x),sy=brandStartYear(y);
+      return sx<sy?-1:(sx>sy?1:0);
     });
+    if((ui.sorts[cat]||'new')==='new')dated.reverse();
+    list=dated.concat(undated);
   }else if(SORTABLE.includes(cat))list=sortByDate(list,ui.sorts[cat]||'new');
   else if(cat==='周邊')list=sortProducts(list,ui.sorts[cat]||'old');
   const prod=cat==='周邊',iv=cat==='訪談';
