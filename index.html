@@ -1673,10 +1673,14 @@ function viewLinks(cat){
   }
   let list=data.items.filter(it=>it.cat===cat&&(!ui.tag||(ui.tag==='現在'?!!it.current:matchTag(it,ui.tag)))&&(!ui.sub||it.tags.includes(ui.sub))&&(!(cat==='周邊'&&ui.fty)||it.tags.includes(ui.fty))&&(!(cat==='節目'&&ui.who)||it.who===ui.who));
 if(cat==='廣告代言'){
-    const dated=list.filter(x=>brandStartYear(x)),undated=list.filter(x=>!brandStartYear(x));
-    dated.sort((x,y)=>brandStartYear(x)<brandStartYear(y)?-1:(brandStartYear(x)>brandStartYear(y)?1:0));
-    if((ui.sorts[cat]||'new')==='new')dated.reverse();
-    list=dated.concat(undated);
+    const dir=ui.sorts[cat]||'new';
+    list.sort((a,b)=>{
+      if(dir==='new'&&!!a.current!==!!b.current)return a.current?-1:1;
+      const dateA=brandDateOf(a)||brandStartYear(a);
+      const dateB=brandDateOf(b)||brandStartYear(b);
+      const cmp=String(dateB).localeCompare(String(dateA));
+      return dir==='new'?cmp:-cmp;
+    });
   }else if(SORTABLE.includes(cat))list=sortByDate(list,ui.sorts[cat]||'new');
   else if(cat==='周邊')list=sortProducts(list,ui.sorts[cat]||'old');
   const prod=cat==='周邊',iv=cat==='訪談';
