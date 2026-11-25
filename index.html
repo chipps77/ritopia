@@ -150,6 +150,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .row{display:flex;gap:12px;overflow-x:auto;padding:2px 0 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .row>*{scroll-snap-align:start}
 .row.cards>.card{flex:none;width:260px}
+.row.cards>.camcard{flex:none;width:220px}
 .pt{position:relative;flex:none;width:160px}
 .poster{position:relative;display:block;width:100%;aspect-ratio:2/3;padding:0;border:0;border-radius:6px;overflow:hidden;color:#fff;text-align:left;background-size:cover;background-position:center}
 .poster .pt-title{position:absolute;left:10px;right:10px;bottom:28px;font-size:20px;font-weight:900;line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,.5)}
@@ -1389,6 +1390,16 @@ function viewLive(it){
     `<h3 class="rowh">${esc(T('簡介'))}</h3>${syn?`<p class="syn full">${esc(syn)}</p>`:`<p class="muted pad">${esc(T('還沒有簡介。'))}</p>`}`+
     `<h3 class="rowh">${esc(T('佳句'))}</h3>${hi.length?`<ul class="hilist">${hi.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="muted pad">${esc(T('還沒有佳句。'))}</p>`}`;
 }
+function idTime(id){const m=/^i([0-9a-z]{8})[0-9a-z]{2,6}$/.exec(String(id||''));if(!m)return 0;const t=parseInt(m[1],36);return (t>1577836800000&&t<Date.now()+864e5)?t:0;}
+function recentEntries(n){
+  const out=[];
+  data.items.forEach((it,k)=>{
+    out.push({t:idTime(it.id),k,it});
+    if(it.cat==='廣告代言')[it].concat(it.subBrands||[]).forEach(u=>(u.campaigns||[]).forEach(c=>{const t=idTime(c.id);if(t)out.push({t,k,c,b:it,s:u===it?null:u});}));
+  });
+  out.sort((a,b)=>(b.t-a.t)||(a.k-b.k));
+  return out.slice(0,n);
+}
 function cardHtml(it){
   if(it.cat==='周邊')return productHtml(it);
   if(it.cat==='訪談')return interviewCard(it);
@@ -1541,8 +1552,8 @@ function viewHome(){
   let h=about+`<section class="profile">${photo}<div class="pinfo"><h2>${name?esc(name):esc(T('還沒有簡介'))}</h2>${tagline?`<p class="tagline">${esc(tagline)}</p>`:''}${bio?`<p class="bio">${esc(bio)}</p>`:''}${kv}${links}${ed?`<div class="hbtns"><button class="btn" data-act="editprofile">${esc(T('編輯簡介'))}</button><button class="btn sec" data-act="editwall">${esc(T('編輯輪播照片'))}</button><button class="btn sec" data-act="editboard">${esc(T('管理留言彈幕'))}</button></div>`:''}</div></section>`;
   const ws=data.works.slice().sort(byYear).slice(0,12);
   if(ws.length)h+=`<h3 class="rowh">${esc(T('作品'))}</h3><div class="row">${ws.map(posterHtml).join('')}</div>`;
-  const its=data.items.slice(0,8);
-  if(its.length)h+=`<h3 class="rowh">${esc(T('最近新增'))}</h3><div class="row cards">${its.map(cardHtml).join('')}</div>`;
+  const its=recentEntries(8);
+  if(its.length)h+=`<h3 class="rowh">${esc(T('最近新增'))}</h3><div class="row cards">${its.map(e=>e.c?campaignCard(e.c,e.b.id,e.s?e.s.id:'',false):cardHtml(e.it)).join('')}</div>`;
   const ct=data.contact,ctText=L(ct,'text');
   if(ctText||ct.email||ct.links.length||ed){
     const cl=(ct.email?`<span class="mailtxt">${esc(ct.email)}</span>`:'')+ct.links.map(l=>`<a class="lnk" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.title)}</a>`).join('');
