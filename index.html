@@ -809,6 +809,7 @@ function hostLabel(h){
   if(/(^|\.)bilibili\.com$|^b23\.tv$/.test(h))return 'bilibili';
   if(/(^|\.)instagram\.com$/.test(h))return 'Instagram';
   if(/(^|\.)facebook\.com$|^fb\.watch$/.test(h))return 'Facebook';
+  if(/(^|\.)vlivearchive\.com$|(^|\.)vlive\.tv$/.test(h))return 'V LIVE';
   return h||T('連結');
 }
 const isSafe=u=>/^https?:\/\//i.test(u||'');
@@ -1375,8 +1376,15 @@ function viewInterview(it){
 function isLive(it){return it.cat==='節目'&&it.tags.includes('直播');}
 function liveCard(it){
   const ed=editing(),title=L(it,'title');
+  if(!isSafe(it.url)){
   return `<article class="card"><button class="thumb${it.thumb?' has':''}" data-act="openlive" data-id="${esc(it.id)}" style="${thumbStyle(it,it.title+it.id)}" aria-label="${esc(title)}"><span class="badge">${esc(T('直播'))}</span></button>`+
     `<button class="ttl" data-act="openlive" data-id="${esc(it.id)}">${esc(title)}</button>`+
+    (it.date?`<div class="meta"><span>${esc(it.date)}</span></div>`:'')+tagsHtml(it,ed)+
+    (ed?`<div class="tools"><button class="mini" data-act="editlive" data-id="${esc(it.id)}">${esc(T('編輯這張卡片'))}</button></div>`:'')+`</article>`;
+  }
+  const href=esc(it.url);
+  return `<article class="card"><a class="thumb${it.thumb?' has':''}" href="${href}" target="_blank" rel="noopener noreferrer" style="${thumbStyle(it,it.title+it.url)}" tabindex="-1" aria-hidden="true">${PLAY}<span class="host">${esc(hostLabel(hostOf(it.url)))}</span><span class="badge">${esc(T('直播'))}</span></a>`+
+    `<a class="ttl" href="${href}" target="_blank" rel="noopener noreferrer">${esc(title)}</a>`+
     (it.date?`<div class="meta"><span>${esc(it.date)}</span></div>`:'')+tagsHtml(it,ed)+
     (ed?`<div class="tools"><button class="mini" data-act="editlive" data-id="${esc(it.id)}">${esc(T('編輯這張卡片'))}</button></div>`:'')+`</article>`;
 }
